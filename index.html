@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现金流 - 财务自由之路</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 开始菜单 -->
+    <div id="screen-menu" class="screen active">
+        <div class="menu-container">
+            <h1 class="game-title">现金流</h1>
+            <p class="game-subtitle">财务自由之路</p>
+            <p class="game-desc">基于《富爸爸穷爸爸》理念<br>学会区分资产与负债，逃出老鼠赛跑圈</p>
+            <div class="menu-buttons">
+                <button id="btn-new-game" class="btn btn-primary">开始新游戏</button>
+                <button id="btn-load-game" class="btn btn-secondary">继续游戏</button>
+                <button id="btn-how-to-play" class="btn btn-secondary">游戏说明</button>
+            </div>
+            <div id="save-slots" class="save-slots hidden"></div>
+        </div>
+    </div>
+
+    <!-- 职业选择 -->
+    <div id="screen-career" class="screen">
+        <div class="career-container">
+            <h2>选择你的职业</h2>
+            <p class="career-hint">不同职业有不同的起始收入和支出，难度各异</p>
+            <div id="career-list" class="career-list"></div>
+            <button id="btn-back-menu" class="btn btn-text">返回主菜单</button>
+        </div>
+    </div>
+
+    <!-- 游戏说明 -->
+    <div id="screen-tutorial" class="screen">
+        <div class="tutorial-container">
+            <h2>游戏说明</h2>
+            <div class="tutorial-content">
+                <div class="tutorial-section">
+                    <h3>目标</h3>
+                    <p>让你的<strong>被动收入</strong>超过<strong>总支出</strong>，实现财务自由，逃出老鼠赛跑圈！</p>
+                </div>
+                <div class="tutorial-section">
+                    <h3>什么是资产？</h3>
+                    <p>资产是<strong>把钱放进你口袋</strong>的东西。比如：出租房产带来租金收入，股票带来分红，生意带来利润。</p>
+                </div>
+                <div class="tutorial-section">
+                    <h3>什么是负债？</h3>
+                    <p>负债是<strong>把钱从你口袋拿走</strong>的东西。比如：房贷月供、车贷月供、信用卡还款。</p>
+                </div>
+                <div class="tutorial-section">
+                    <h3>核心公式</h3>
+                    <p class="formula">月现金流 = 总收入（工资 + 被动收入） - 总支出</p>
+                </div>
+                <div class="tutorial-section">
+                    <h3>游戏流程</h3>
+                    <p>每回合代表一个月：领工资 → 收被动收入 → 扣除支出 → 抽取事件卡 → 做出决策</p>
+                </div>
+                <div class="tutorial-section">
+                    <h3>小贴士</h3>
+                    <p>记住富爸爸的教诲：富人买入资产，穷人和中产买入自以为是资产的负债。</p>
+                </div>
+            </div>
+            <button id="btn-back-from-tutorial" class="btn btn-primary">返回主菜单</button>
+        </div>
+    </div>
+
+    <!-- 主游戏界面 -->
+    <div id="screen-game" class="screen">
+        <!-- 顶部状态栏 -->
+        <div class="game-header">
+            <div class="header-left">
+                <span class="month-display">第 <span id="current-month">1</span> 月</span>
+                <span class="career-display" id="player-career"></span>
+            </div>
+            <div class="header-right">
+                <span class="cash-display">现金: ¥<span id="player-cash">0</span></span>
+                <button id="btn-save" class="btn btn-small">存档</button>
+                <button id="btn-quit" class="btn btn-small">退出</button>
+            </div>
+        </div>
+
+        <!-- 主要内容区 -->
+        <div class="game-body">
+            <!-- 左侧：财务报表 -->
+            <div class="panel panel-finance">
+                <h3>财务报表</h3>
+                <!-- 收入 -->
+                <div class="finance-section">
+                    <div class="section-header income-header">
+                        <span>收入</span>
+                        <span class="section-total">¥<span id="total-income">0</span>/月</span>
+                    </div>
+                    <div id="income-list" class="finance-list"></div>
+                </div>
+                <!-- 支出 -->
+                <div class="finance-section">
+                    <div class="section-header expense-header">
+                        <span>支出</span>
+                        <span class="section-total">¥<span id="total-expense">0</span>/月</span>
+                    </div>
+                    <div id="expense-list" class="finance-list"></div>
+                </div>
+                <!-- 月现金流 -->
+                <div class="cashflow-summary">
+                    <span>月现金流</span>
+                    <span id="monthly-cashflow" class="cashflow-value">¥0</span>
+                </div>
+                <!-- 资产 -->
+                <div class="finance-section">
+                    <div class="section-header asset-header">
+                        <span>资产</span>
+                        <span class="section-total">¥<span id="total-assets">0</span></span>
+                    </div>
+                    <div id="asset-list" class="finance-list"></div>
+                </div>
+                <!-- 负债 -->
+                <div class="finance-section">
+                    <div class="section-header liability-header">
+                        <span>负债</span>
+                        <span class="section-total">¥<span id="total-liabilities">0</span></span>
+                    </div>
+                    <div id="liability-list" class="finance-list"></div>
+                </div>
+                <!-- 被动收入进度 -->
+                <div class="freedom-progress">
+                    <div class="progress-label">
+                        <span>财务自由进度</span>
+                        <span id="freedom-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="freedom-bar" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-detail">
+                        被动收入 ¥<span id="passive-income">0</span> / 总支出 ¥<span id="target-expense">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：事件区 -->
+            <div class="panel panel-event">
+                <div id="event-area" class="event-area">
+                    <div class="event-placeholder">
+                        <p>点击下方按钮开始新的一个月</p>
+                    </div>
+                </div>
+                <div class="action-bar">
+                    <button id="btn-next-month" class="btn btn-primary btn-large">进入下个月</button>
+                </div>
+                <!-- 消息日志 -->
+                <div class="message-log">
+                    <h4>消息记录</h4>
+                    <div id="message-list" class="message-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 事件卡弹窗 -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div id="modal-card" class="modal-card">
+            <div id="card-type-badge" class="card-type-badge"></div>
+            <h3 id="card-title" class="card-title"></h3>
+            <p id="card-description" class="card-description"></p>
+            <div id="card-details" class="card-details"></div>
+            <div id="card-tip" class="card-tip"></div>
+            <div id="card-actions" class="card-actions"></div>
+        </div>
+    </div>
+
+    <!-- 游戏结束弹窗 -->
+    <div id="modal-gameover" class="modal-overlay hidden">
+        <div class="modal-card modal-gameover">
+            <h2 id="gameover-title"></h2>
+            <p id="gameover-message"></p>
+            <div id="gameover-stats" class="gameover-stats"></div>
+            <div class="card-actions">
+                <button id="btn-gameover-menu" class="btn btn-primary">返回主菜单</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/careers.js"></script>
+    <script src="js/cards.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

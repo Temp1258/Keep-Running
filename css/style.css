@@ -1,0 +1,572 @@
+/* === 基础重置与变量 === */
+:root {
+    --color-bg: #0f1923;
+    --color-surface: #1a2732;
+    --color-surface-alt: #213341;
+    --color-border: #2d4a5c;
+    --color-text: #e8edf2;
+    --color-text-dim: #8a9bb0;
+    --color-primary: #4fc3f7;
+    --color-primary-dark: #0288d1;
+    --color-income: #66bb6a;
+    --color-expense: #ef5350;
+    --color-asset: #42a5f5;
+    --color-liability: #ff7043;
+    --color-gold: #ffd54f;
+    --color-positive: #66bb6a;
+    --color-negative: #ef5350;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* === 屏幕管理 === */
+.screen {
+    display: none;
+    min-height: 100vh;
+}
+.screen.active {
+    display: flex;
+}
+
+/* === 按钮 === */
+.btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.btn-primary {
+    background: var(--color-primary);
+    color: var(--color-bg);
+}
+.btn-primary:hover { background: var(--color-primary-dark); color: #fff; }
+
+.btn-secondary {
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+.btn-secondary:hover { background: var(--color-border); }
+
+.btn-success {
+    background: var(--color-positive);
+    color: #fff;
+}
+.btn-success:hover { filter: brightness(0.9); }
+
+.btn-danger {
+    background: var(--color-negative);
+    color: #fff;
+}
+.btn-danger:hover { filter: brightness(0.9); }
+
+.btn-text {
+    background: none;
+    color: var(--color-text-dim);
+    padding: 8px 16px;
+}
+.btn-text:hover { color: var(--color-text); }
+
+.btn-small {
+    padding: 6px 14px;
+    font-size: 13px;
+    background: var(--color-surface-alt);
+    color: var(--color-text-dim);
+    border: 1px solid var(--color-border);
+}
+.btn-small:hover { background: var(--color-border); color: var(--color-text); }
+
+.btn-large {
+    padding: 14px 36px;
+    font-size: 18px;
+    width: 100%;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* === 主菜单 === */
+.menu-container {
+    margin: auto;
+    text-align: center;
+    padding: 40px;
+}
+
+.game-title {
+    font-size: 64px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--color-gold), var(--color-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+
+.game-subtitle {
+    font-size: 22px;
+    color: var(--color-text-dim);
+    margin-bottom: 24px;
+}
+
+.game-desc {
+    font-size: 15px;
+    color: var(--color-text-dim);
+    line-height: 1.8;
+    margin-bottom: 40px;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 280px;
+    margin: 0 auto 24px;
+}
+.menu-buttons .btn { width: 100%; }
+
+/* === 存档槽 === */
+.save-slots {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: left;
+}
+.save-slot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.save-slot:hover { background: var(--color-surface-alt); }
+.save-slot-info h4 { font-size: 14px; margin-bottom: 2px; }
+.save-slot-info p { font-size: 12px; color: var(--color-text-dim); }
+.save-slot-actions { display: flex; gap: 6px; }
+.save-slot-actions .btn-small { font-size: 12px; padding: 4px 10px; }
+
+.hidden { display: none !important; }
+
+/* === 职业选择 === */
+.career-container {
+    margin: auto;
+    padding: 40px;
+    max-width: 900px;
+    width: 100%;
+}
+.career-container h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+.career-hint {
+    text-align: center;
+    color: var(--color-text-dim);
+    margin-bottom: 32px;
+}
+.career-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.career-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+.career-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+.career-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: block;
+}
+.career-card h3 { font-size: 20px; margin-bottom: 8px; }
+.career-card .career-salary {
+    color: var(--color-income);
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.career-card .career-detail {
+    font-size: 13px;
+    color: var(--color-text-dim);
+    line-height: 1.6;
+}
+.career-card .career-difficulty {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--color-gold);
+}
+#btn-back-menu { display: block; margin: 0 auto; }
+
+/* === 游戏说明 === */
+.tutorial-container {
+    margin: auto;
+    padding: 40px;
+    max-width: 700px;
+    width: 100%;
+}
+.tutorial-container h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 24px;
+}
+.tutorial-content { margin-bottom: 32px; }
+.tutorial-section {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+}
+.tutorial-section h3 {
+    color: var(--color-primary);
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+.tutorial-section p { font-size: 14px; line-height: 1.7; color: var(--color-text-dim); }
+.tutorial-section strong { color: var(--color-text); }
+.formula {
+    text-align: center;
+    font-size: 16px !important;
+    color: var(--color-gold) !important;
+    font-weight: 600;
+    padding: 8px 0;
+}
+#btn-back-from-tutorial { display: block; margin: 0 auto; }
+
+/* === 主游戏界面 === */
+#screen-game {
+    flex-direction: column;
+    height: 100vh;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+.header-left, .header-right { display: flex; align-items: center; gap: 16px; }
+.month-display {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-gold);
+}
+.career-display { font-size: 14px; color: var(--color-text-dim); }
+.cash-display {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-income);
+}
+
+.game-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* === 面板 === */
+.panel {
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.panel-finance {
+    width: 380px;
+    min-width: 380px;
+    border-right: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+.panel-finance h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--color-text-dim);
+}
+
+.panel-event {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 24px;
+}
+
+/* === 财务报表 === */
+.finance-section { margin-bottom: 12px; }
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.income-header { background: rgba(102,187,106,0.15); color: var(--color-income); }
+.expense-header { background: rgba(239,83,80,0.15); color: var(--color-expense); }
+.asset-header { background: rgba(66,165,245,0.15); color: var(--color-asset); }
+.liability-header { background: rgba(255,112,67,0.15); color: var(--color-liability); }
+.section-total { font-weight: 700; }
+
+.finance-list { padding: 0 4px; }
+.finance-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 8px;
+    font-size: 13px;
+    color: var(--color-text-dim);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.finance-item:last-child { border-bottom: none; }
+
+.cashflow-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--color-surface-alt);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-weight: 700;
+    font-size: 15px;
+}
+.cashflow-value { font-size: 18px; }
+.cashflow-positive { color: var(--color-positive); }
+.cashflow-negative { color: var(--color-negative); }
+
+/* === 财务自由进度 === */
+.freedom-progress {
+    background: var(--color-surface-alt);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-top: 8px;
+}
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: var(--color-gold);
+    font-weight: 600;
+}
+.progress-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-gold));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    width: 0%;
+}
+.progress-detail { font-size: 12px; color: var(--color-text-dim); text-align: center; }
+
+/* === 事件区域 === */
+.event-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+.event-placeholder {
+    text-align: center;
+    color: var(--color-text-dim);
+    font-size: 16px;
+}
+
+.action-bar {
+    padding: 12px 0;
+    flex-shrink: 0;
+}
+
+/* === 消息日志 === */
+.message-log {
+    flex-shrink: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    padding: 12px;
+}
+.message-log h4 {
+    font-size: 13px;
+    color: var(--color-text-dim);
+    margin-bottom: 8px;
+}
+.message-list { font-size: 13px; }
+.message-item {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--color-text-dim);
+    line-height: 1.5;
+}
+.message-item:last-child { border-bottom: none; }
+.msg-income { color: var(--color-income); }
+.msg-expense { color: var(--color-expense); }
+.msg-info { color: var(--color-primary); }
+.msg-warning { color: var(--color-gold); }
+
+/* === 模态弹窗 === */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.modal-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    max-width: 500px;
+    width: 100%;
+    position: relative;
+    box-shadow: var(--shadow);
+    animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card-type-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.badge-opportunity { background: rgba(102,187,106,0.2); color: var(--color-income); }
+.badge-expense { background: rgba(239,83,80,0.2); color: var(--color-expense); }
+.badge-market { background: rgba(66,165,245,0.2); color: var(--color-asset); }
+.badge-learning { background: rgba(255,213,79,0.2); color: var(--color-gold); }
+
+.card-title {
+    font-size: 22px;
+    margin-bottom: 12px;
+}
+.card-description {
+    font-size: 14px;
+    color: var(--color-text-dim);
+    line-height: 1.7;
+    margin-bottom: 16px;
+}
+
+.card-details {
+    background: var(--color-bg);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.8;
+}
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+}
+.detail-label { color: var(--color-text-dim); }
+.detail-value { font-weight: 600; }
+
+.card-tip {
+    font-size: 13px;
+    color: var(--color-gold);
+    background: rgba(255,213,79,0.1);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+.card-tip:empty { display: none; }
+
+.card-actions {
+    display: flex;
+    gap: 10px;
+}
+.card-actions .btn { flex: 1; }
+
+/* === 游戏结束 === */
+.modal-gameover { text-align: center; }
+.modal-gameover h2 { font-size: 32px; margin-bottom: 12px; }
+.modal-gameover p { color: var(--color-text-dim); margin-bottom: 20px; line-height: 1.6; }
+
+.gameover-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+.stat-item {
+    background: var(--color-bg);
+    border-radius: var(--radius);
+    padding: 12px;
+}
+.stat-label { font-size: 12px; color: var(--color-text-dim); }
+.stat-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+/* === 响应式 === */
+@media (max-width: 800px) {
+    .game-body {
+        flex-direction: column;
+    }
+    .panel-finance {
+        width: 100%;
+        min-width: unset;
+        max-height: 40vh;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+    .career-list {
+        grid-template-columns: 1fr;
+    }
+    .game-title { font-size: 42px; }
+}
