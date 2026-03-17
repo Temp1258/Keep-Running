@@ -31,6 +31,12 @@ const UI = {
 
     // === 职业选择 ===
     renderCareerList(onSelect) {
+        const traitLabels = {
+            frugal: '节俭：可选消费减半',
+            learner: '学者：学习奖励翻倍',
+            techie: '技术：科技投资+20%',
+            connected: '人脉：社交带来投资机会'
+        };
         const list = document.getElementById('career-list');
         list.innerHTML = CAREERS.map(career => `
             <div class="career-card" data-career="${career.id}">
@@ -40,8 +46,10 @@ const UI = {
                 <div class="career-detail">
                     初始现金: ¥${career.cash.toLocaleString()}<br>
                     月支出: ¥${career.expenses.reduce((s, e) => s + e.amount, 0).toLocaleString()}<br>
-                    初始负债: ¥${career.liabilities.reduce((s, l) => s + l.total, 0).toLocaleString()}
+                    初始负债: ¥${career.liabilities.reduce((s, l) => s + l.total, 0).toLocaleString()}<br>
+                    贷款上限: ¥${(career.maxLoanAmount || 100000).toLocaleString()}
                 </div>
+                <div style="font-size:12px;color:var(--color-gold);margin-top:8px">${traitLabels[career.specialTrait] || ''}</div>
                 <div class="career-difficulty">难度: ${career.difficulty}</div>
             </div>
         `).join('');
@@ -90,8 +98,9 @@ const UI = {
         });
     },
 
-    // === 财务报表（V3: 含现金流图、协同加成、累计收益、税务） ===
+    // === 财务报表（V4: 含现金流图、协同加成、累计收益、税务、社交资本） ===
     updateFinancePanel(player, maxMonths) {
+        this.maxMonths = maxMonths;
         // === 现金流模式图 ===
         this.renderCashflowDiagram(player);
 
@@ -115,10 +124,14 @@ const UI = {
             incomeItems += `<div class="finance-item finance-tax-line"><span>└ 税(-${Math.round(Player.TAX_RATES.passive * 100)}%)</span><span style="color:var(--color-text-dim)">-¥${tax.toLocaleString()}</span></div>`;
         });
 
-        // 协同加成
+        // V5: 协同加成详情展示
+        const activeSynergies = player.getActiveSynergies();
         const synergyBonus = player.calculateSynergyBonus();
         if (synergyBonus > 0) {
             incomeItems += `<div class="finance-item synergy-line"><span>协同加成</span><span style="color:var(--color-gold)">+¥${synergyBonus.toLocaleString()}</span></div>`;
+            activeSynergies.forEach(syn => {
+                incomeItems += `<div class="finance-item finance-sub-line"><span>└ ${syn.name}(+${Math.round(syn.bonusRate * 100)}%)</span><span style="color:var(--color-gold)">${syn.desc}</span></div>`;
+            });
         }
 
         incomeList.innerHTML = incomeItems;
@@ -270,11 +283,25 @@ const UI = {
             }
         }
 
+        // 社交资本
+        const socialEl = document.getElementById('social-capital');
+        if (socialEl) {
+            socialEl.textContent = `社:${player.socialCapital}`;
+            socialEl.style.color = player.socialCapital >= 50 ? 'var(--color-income)' : player.socialCapital >= 30 ? 'var(--color-gold)' : 'var(--color-expense)';
+        }
+
         // 低满意度氛围
         const gameScreen = document.getElementById('game-screen');
         if (gameScreen) {
             gameScreen.classList.toggle('low-satisfaction', player.satisfaction < 40);
             gameScreen.classList.toggle('crisis-satisfaction', player.satisfaction < 20);
+        }
+
+        // V4: 时间压力视觉效果
+        if (gameScreen && this.maxMonths) {
+            const remaining = (this.maxMonths || 60) - player.month + 1;
+            gameScreen.classList.toggle('phase-urgent', remaining <= 12);
+            gameScreen.classList.toggle('phase-warning', remaining > 12 && remaining <= 24);
         }
     },
 
@@ -416,6 +443,98 @@ const UI = {
         overlay.classList.remove('hidden');
     },
 
+    // === V4: 多卡选择界面 ===
+    showCardChoice(candidates, onChoose) {
+        const overlay = document.getElementById('modal-overlay');
+        document.getElementById('card-type-badge').textContent = '选择事件';
+        document.getElementById('card-type-badge').className = 'card-type-badge badge-learning';
+        document.getElementById('card-title').textContent = '本月有多个事件，选择一个处理';
+        document.getElementById('card-description').textContent = '你的人脉和信息渠道带来了多个选择。未选择的事件将不会发生。';
+
+        const detailsEl = document.getElementById('card-details');
+        detailsEl.innerHTML = candidates.map((c, i) => {
+            const typeInfo = CARD_TYPES[c.type];
+            const title = c.card.title || c.card.question || '';
+            let preview = '';
+            if (c.type === 'opportunity') {
+                const net = c.card.monthlyIncome - (c.card.liability ? c.card.liability.monthly : 0);
+                preview = `首付¥${c.card.downPayment.toLocaleString()} | 净现金流¥${net}/月`;
+            } else if (c.type === 'expense') {
+                preview = c.card.optional ? `可选消费 ¥${c.card.amount.toLocaleString()}` : `支出 ¥${c.card.amount.toLocaleString()}`;
+            } else if (c.type === 'market') {
+                preview = '市场波动事件';
+            } else if (c.type === 'learning') {
+                preview = `答题奖励 ¥${c.card.reward.toLocaleString()}`;
+            } else if (c.type === 'chain') {
+                preview = '连锁事件';
+            }
+            return `<div class="detail-row" style="padding:6px 0;border-bottom:1px solid var(--color-border)">
+                <span class="detail-label"><span style="color:${c.type === 'opportunity' ? 'var(--color-income)' : c.type === 'expense' ? 'var(--color-expense)' : 'var(--color-primary)'}">[${typeInfo.label}]</span> ${title}</span>
+                <span class="detail-value" style="font-size:12px">${preview}</span>
+            </div>`;
+        }).join('');
+
+        document.getElementById('card-tip').textContent = '提示：选择对你当前财务状况最有利的事件。';
+
+        const actionsEl = document.getElementById('card-actions');
+        actionsEl.innerHTML = '';
+        actionsEl.style.flexDirection = 'column';
+
+        candidates.forEach((c, i) => {
+            const typeInfo = CARD_TYPES[c.type];
+            const btn = document.createElement('button');
+            btn.className = 'btn ' + (c.type === 'opportunity' ? 'btn-success' : c.type === 'expense' ? 'btn-danger' : 'btn-secondary');
+            btn.textContent = `${typeInfo.label}: ${c.card.title || c.card.question || ''}`;
+            btn.addEventListener('click', () => {
+                overlay.classList.add('hidden');
+                onChoose(c);
+            });
+            actionsEl.appendChild(btn);
+        });
+
+        overlay.classList.remove('hidden');
+    },
+
+    // === V4: 主动行动菜单 ===
+    showActionMenu(actions, onCancel) {
+        const overlay = document.getElementById('modal-overlay');
+        document.getElementById('card-type-badge').textContent = '主动行动';
+        document.getElementById('card-type-badge').className = 'card-type-badge badge-opportunity';
+        document.getElementById('card-title').textContent = '选择一个行动';
+        document.getElementById('card-description').textContent = '每月可执行一次主动行动，主动出击而非被动等待。';
+
+        document.getElementById('card-details').innerHTML = '';
+        document.getElementById('card-tip').textContent = '主动行动不消耗月份，但每月只能使用一次。';
+
+        const actionsEl = document.getElementById('card-actions');
+        actionsEl.innerHTML = '';
+        actionsEl.style.flexDirection = 'column';
+
+        actions.forEach(action => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-secondary';
+            btn.innerHTML = `<span style="margin-right:6px">${action.icon}</span>${action.label} <span style="font-size:12px;color:var(--color-text-dim)">- ${action.desc}</span>`;
+            btn.style.textAlign = 'left';
+            if (action.disabled) btn.disabled = true;
+            btn.addEventListener('click', () => {
+                overlay.classList.add('hidden');
+                action.handler();
+            });
+            actionsEl.appendChild(btn);
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-text';
+        cancelBtn.textContent = '取消';
+        cancelBtn.addEventListener('click', () => {
+            overlay.classList.add('hidden');
+            if (onCancel) onCancel();
+        });
+        actionsEl.appendChild(cancelBtn);
+
+        overlay.classList.remove('hidden');
+    },
+
     // === 事件卡弹窗（V3: 支持额外详情文本） ===
     showCard(type, card, actions, extraNote) {
         const overlay = document.getElementById('modal-overlay');
@@ -525,6 +644,15 @@ const UI = {
             });
             actionsEl.appendChild(btn);
         });
+
+        // V5: 投资清晰度视觉效果
+        const modalCard = document.getElementById('modal-card');
+        modalCard.classList.remove('clarity-foggy', 'clarity-blind');
+        if (type === 'opportunity' && window.game) {
+            const clarity = window.game.player.getInvestmentClarity();
+            if (clarity === 'foggy') modalCard.classList.add('clarity-foggy');
+            else if (clarity === 'blind') modalCard.classList.add('clarity-blind');
+        }
 
         overlay.classList.remove('hidden');
     },
@@ -684,6 +812,26 @@ const UI = {
             });
         }
 
+        // V5: 协同效应、社交资本、象限进化条件
+        if (data.activeSynergies && data.activeSynergies.length > 0) {
+            detailsHtml += `<div class="detail-row" style="margin-top:8px;border-top:1px solid var(--color-border);padding-top:8px">
+                <span class="detail-label" style="color:var(--color-gold)">协同效应</span>
+                <span class="detail-value" style="color:var(--color-gold)">+¥${data.synergyBonus.toLocaleString()}/月</span>
+            </div>`;
+            data.activeSynergies.forEach(s => {
+                detailsHtml += `<div class="detail-row"><span class="detail-label" style="font-size:12px">├ ${s.name}</span><span class="detail-value" style="font-size:12px">${s.desc}</span></div>`;
+            });
+        }
+
+        detailsHtml += `<div class="detail-row" style="margin-top:8px;border-top:1px solid var(--color-border);padding-top:8px">
+            <span class="detail-label">社交资本</span>
+            <span class="detail-value" style="color:${data.socialCapital >= 50 ? 'var(--color-income)' : data.socialCapital >= 30 ? 'var(--color-gold)' : 'var(--color-expense)'}">${data.socialCapital}</span>
+        </div>`;
+        detailsHtml += `<div class="detail-row"><span class="detail-label">当前象限</span><span class="detail-value">${data.quadrant} 象限</span></div>`;
+        if (data.quadrantConditions) {
+            detailsHtml += `<div class="detail-row"><span class="detail-label" style="font-size:11px;color:var(--color-text-dim)">${data.quadrantConditions}</span><span></span></div>`;
+        }
+
         document.getElementById('card-details').innerHTML = detailsHtml;
 
         let tipText = '通货膨胀正在侵蚀你的购买力。只有让资产增长速度超过通胀，才能真正变富。';
@@ -790,6 +938,25 @@ const UI = {
                 });
                 analysisHtml += `<div class="report-item" style="color:var(--color-gold)">时间是资产最好的朋友。越早投资，复利越有力量。</div></div>`;
             }
+        }
+
+        // V4: 关键转折点 Timeline
+        if (v3Data && v3Data.keyMoments && v3Data.keyMoments.length > 0) {
+            analysisHtml += `<div class="report-section"><h4 style="color:var(--color-primary)">关键转折点</h4>`;
+            v3Data.keyMoments.forEach(m => {
+                const color = m.type === 'good' ? 'var(--color-income)' : m.type === 'missed' ? 'var(--color-expense)' : 'var(--color-gold)';
+                const icon = m.type === 'good' ? '✓' : m.type === 'missed' ? '✗' : '⚠';
+                analysisHtml += `<div class="report-item" style="color:${color}">${icon} 第${m.month}月: ${m.text}</div>`;
+            });
+            analysisHtml += '</div>';
+        }
+
+        // V4: 社交资本
+        if (v3Data && v3Data.socialCapital !== undefined) {
+            const scLevel = v3Data.socialCapital >= 60 ? '广泛' : v3Data.socialCapital >= 40 ? '一般' : '匮乏';
+            analysisHtml += `<div class="report-section"><h4 style="color:var(--color-text-dim)">社交资本: ${v3Data.socialCapital} (${scLevel})</h4>
+                <div class="report-item">${v3Data.socialCapital >= 60 ? '你的人脉为你带来了丰富的投资渠道。' : v3Data.socialCapital >= 40 ? '社交网络尚可，但还有提升空间。' : '社交资本不足限制了你的投资机会来源。'}</div>
+            </div>`;
         }
 
         // V3: 协同效应
