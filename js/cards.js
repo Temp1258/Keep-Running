@@ -17,7 +17,8 @@ const CARD_TYPES = {
     protection: { label: '资产保护', badgeClass: 'badge-opportunity' },
     risk: { label: '风险事件', badgeClass: 'badge-expense' },
     satisfaction: { label: '生活事件', badgeClass: 'badge-market' },
-    quadrant: { label: '象限进化', badgeClass: 'badge-opportunity' }
+    quadrant: { label: '象限进化', badgeClass: 'badge-opportunity' },
+    interaction: { label: '资产互动', badgeClass: 'badge-opportunity' }
 };
 
 const CARDS = {
@@ -683,6 +684,69 @@ const RISK_EVENTS = [
 ];
 
 /**
+ * V5: 资产互动事件（已有资产触发新决策）
+ */
+const ASSET_INTERACTION_EVENTS = [
+    {
+        id: 'tenant_negotiate',
+        requireAssetType: 'realestate',
+        requireAssetCount: 1,
+        title: '租客要求降租',
+        description: '你的租客因为经济困难要求降低20%租金。拒绝的话他可能搬走，导致2个月空置。',
+        choices: [
+            { label: '同意降租', effect: 'reduce_income', multiplier: 0.8, satisfactionDelta: 3, socialDelta: 5,
+              tip: '留住租客，长期关系更稳定' },
+            { label: '拒绝，冒空置风险', effect: 'risk_vacancy', vacancyMonths: 2, chanceOfLeaving: 0.5,
+              tip: '坚持价格，但可能损失2个月租金' }
+        ],
+        tip: '租户关系管理是房产投资的重要一环。'
+    },
+    {
+        id: 'property_renovation',
+        requireAssetType: 'realestate',
+        requireAssetCount: 2,
+        title: '批量装修升级',
+        description: '装修公司给你批量优惠：花¥8,000统一升级你的所有出租房，租金可以提高25%。',
+        choices: [
+            { label: '批量装修 (-¥8,000)', effect: 'upgrade_all_income', cost: 8000, multiplier: 1.25,
+              tip: '规模化管理的优势' },
+            { label: '算了，现在不需要', effect: 'none',
+              tip: '谨慎投入也是一种策略' }
+        ],
+        tip: '拥有多个同类资产时，可以获得规模化管理优势。'
+    },
+    {
+        id: 'business_partnership',
+        requireAssetType: 'business',
+        requireAssetCount: 2,
+        title: '商业合作提案',
+        description: '有人看中了你的生意版图，提议合作：你投入¥15,000，他负责运营，利润五五分。新生意预计月入¥1,200。',
+        choices: [
+            { label: '合作 (-¥15,000)', effect: 'add_asset', cost: 15000,
+              asset: { name: '合作生意', type: 'business', cost: 15000, income: 600 },
+              monthlyIncome: 600, tip: '合作就是分成' },
+            { label: '不信任，拒绝', effect: 'none',
+              tip: '拒绝也无妨' }
+        ],
+        tip: '生意合作是B象限扩张的常见方式，但需要甄别合作伙伴。'
+    },
+    {
+        id: 'stock_split_choice',
+        requireAssetType: 'stock',
+        requireAssetCount: 1,
+        title: '股票分拆选择',
+        description: '你持有的一只股票要进行分拆重组。你可以选择：保留原股（稳定分红）或转换为成长股（分红减半但价值可能翻倍）。',
+        choices: [
+            { label: '保留原股', effect: 'none',
+              tip: '稳健策略' },
+            { label: '转换成长股', effect: 'transform_stock', incomeMultiplier: 0.5, valueMultiplier: 1.5,
+              tip: '用短期收入换长期升值' }
+        ],
+        tip: '价值投资vs成长投资，没有绝对的对错。'
+    }
+];
+
+/**
  * 连锁事件（需要玩家持有特定资产时才会触发）
  */
 const CHAIN_EVENTS = [
@@ -827,6 +891,18 @@ function drawCard(player) {
                 tip: '别人的"光鲜"很可能是负债堆出来的。资产和负债的区别，看的不是外表。'
             }
         };
+    }
+
+    // V5: 10%概率触发资产互动事件（需持有足够资产）
+    if (Math.random() < 0.10 && player.month >= 13) {
+        const applicable = ASSET_INTERACTION_EVENTS.filter(evt => {
+            const count = player.assets.filter(a => a.type === evt.requireAssetType).length;
+            return count >= evt.requireAssetCount;
+        });
+        if (applicable.length > 0) {
+            const card = applicable[Math.floor(Math.random() * applicable.length)];
+            return { type: 'interaction', card };
+        }
     }
 
     // 15%概率触发连锁事件

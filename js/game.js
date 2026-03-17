@@ -20,6 +20,10 @@ class Game {
         const player = this.player;
         const isNewYear = player.month > 1 && player.month % 12 === 0;
 
+        // V5: 重置每月行动标记（在月初重置，而非月末）
+        player.actionUsedThisMonth = false;
+        player.searchUsedThisMonth = false;
+
         // === V3 月度结算流程 ===
 
         // 1. 结算月收支（含税务、先付自己、满意度衰减）
@@ -337,7 +341,14 @@ class Game {
             rejectedCosts,
             totalMissed,
             satisfaction: player.satisfaction,
-            quadrant: player.quadrant
+            quadrant: player.quadrant,
+            // V5: 更多复盘数据
+            socialCapital: player.socialCapital,
+            activeSynergies: player.getActiveSynergies(),
+            synergyBonus: player.calculateSynergyBonus(),
+            quadrantConditions: this.getQuadrantConditionText(player),
+            assetCount: player.assets.length,
+            liabilityCount: player.liabilities.length
         }, onClose);
     }
 
@@ -348,8 +359,8 @@ class Game {
     drawAndProcessCard() {
         const result1 = drawCard(this.player);
 
-        // V4: 特殊事件（FOMO/社交/报复性消费/风险/教育/保护）直接处理，不给选择
-        const directTypes = ['fomo', 'social', 'risk', 'education', 'protection'];
+        // V4: 特殊事件（FOMO/社交/报复性消费/风险/教育/保护/资产互动）直接处理，不给选择
+        const directTypes = ['fomo', 'social', 'risk', 'education', 'protection', 'interaction'];
         if (directTypes.includes(result1.type) || (result1.type === 'expense' && result1.card.isForced)) {
             this._processCard(result1.type, result1.card);
             return;
@@ -423,6 +434,7 @@ class Game {
             case 'risk': this.handleRisk(card); break;
             case 'fomo': this.handleFOMO(card); break;
             case 'social': this.handleSocial(card); break;
+            case 'interaction': this.handleAssetInteraction(card); break;
             default: this.finishTurn();
         }
     }
@@ -446,51 +458,45 @@ class Game {
             return;
         }
 
-        // V4: 满意度影响投资判断
+        // V5: 满意度影响投资判断（blind状态不再完全禁止，而是增加成本）
         const clarity = player.getInvestmentClarity();
-        if (clarity === 'blind') {
-            UI.showCard('opportunity', card, [{
-                label: '心态崩溃，无法思考投资', class: 'btn-secondary',
-                handler: () => {
-                    UI.addMessage(`满意度过低，无法做出投资决策。先照顾好自己的心态！`, 'warning');
-                    this.finishTurn();
-                }
-            }]);
-            return;
-        }
 
         const canAfford = player.getInvestableAmount() >= card.downPayment;
         const reserveNote = player.investReserve > 0
             ? `(现金 ¥${player.cash.toLocaleString()} + 准备金 ¥${player.investReserve.toLocaleString()})`
             : '';
 
-        // V4: 满意度影响信息可见度
+        // V5: 满意度影响信息可见度 + blind状态成本增加
         const foggy = clarity === 'foggy';
+        const isBlind = clarity === 'blind';
+        const blindPenalty = isBlind ? Math.round(card.downPayment * 0.2) : 0; // blind状态投资成本+20%
 
         // 财商等级信息差
         let extraNote = reserveNote;
-        if (foggy) {
+        if (isBlind) {
+            extraNote += '\n⚠ 心态崩溃：投资判断力严重下降，额外支付20%"冲动溢价"';
+        } else if (foggy) {
             extraNote += '\n⚠ 心态低落：投资分析信息模糊，建议先调整状态';
         }
-        if (player.financialIQ >= 1 && !foggy) {
+        if (player.financialIQ >= 1 && !foggy && !isBlind) {
             const net = card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
             const payback = net > 0 ? Math.ceil(card.downPayment / net) : '永不';
             extraNote += `\n净现金流: ¥${net}/月 | 回收期: ${payback}${typeof payback === 'number' ? '个月' : ''}`;
         }
-        if (player.financialIQ >= 2 && !foggy) {
+        if (player.financialIQ >= 2 && !foggy && !isBlind) {
             const net = card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
             const annualROI = card.downPayment > 0 ? ((net * 12 / card.downPayment) * 100).toFixed(1) : 0;
             const risk = net < 0 ? '高（负现金流）' : net < 200 ? '中' : '低';
             extraNote += `\n年化ROI: ${annualROI}% | 风险评级: ${risk}`;
         }
-        if (player.financialIQ >= 3 && !foggy) {
+        if (player.financialIQ >= 3 && !foggy && !isBlind) {
             const net = card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
             const advice = net > 0 ? '建议买入' : '慎重考虑';
             extraNote += `\n投资建议: ${advice}`;
         }
 
         // 72法则提示
-        if (player.financialIQ >= 1 && card.downPayment > 0 && !foggy) {
+        if (player.financialIQ >= 1 && card.downPayment > 0 && !foggy && !isBlind) {
             const net = card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
             if (net > 0) {
                 const annualReturn = (net * 12 / card.downPayment) * 100;
@@ -501,11 +507,26 @@ class Game {
             }
         }
 
+        // V5: 投资预览计算器（买入后的现金流预览）
+        const netCashflowAfterBuy = player.getMonthlyCashflow() + card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
+        const currentCashflow = player.getMonthlyCashflow();
+        extraNote += `\n─────────── 买入预览 ───────────`;
+        extraNote += `\n当前月现金流: ¥${currentCashflow.toLocaleString()} → 买入后: ¥${netCashflowAfterBuy.toLocaleString()}`;
+        const remainingCash = player.getInvestableAmount() - card.downPayment - blindPenalty;
+        extraNote += `\n剩余可用资金: ¥${remainingCash.toLocaleString()}`;
+
+        const totalCost = card.downPayment + blindPenalty;
+        const canAffordWithPenalty = player.getInvestableAmount() >= totalCost;
         const actions = [
             {
-                label: canAfford ? `买入 (¥${card.downPayment.toLocaleString()})` : `资金不足 (需¥${card.downPayment.toLocaleString()})`,
-                class: 'btn-success', disabled: !canAfford,
+                label: canAffordWithPenalty ? `买入 (¥${totalCost.toLocaleString()}${blindPenalty > 0 ? ' 含溢价' : ''})` : `资金不足 (需¥${totalCost.toLocaleString()})`,
+                class: 'btn-success', disabled: !canAffordWithPenalty,
                 handler: () => {
+                    // V5: blind状态额外支付冲动溢价
+                    if (blindPenalty > 0) {
+                        player.payExpense(blindPenalty);
+                        UI.addMessage(`冲动溢价: -¥${blindPenalty.toLocaleString()}（心态不稳导致决策失误）`, 'expense');
+                    }
                     player.buyAsset(card);
                     UI.addMessage(`购买了 ${card.asset.name}，每月被动收入 +¥${card.monthlyIncome}`, 'income');
                     if (card.liability) {
@@ -1108,7 +1129,8 @@ class Game {
                 handler: () => {
                     player.payExpense(card.amount);
                     player.adjustSatisfaction(10);
-                    player.adjustSocialCapital(5);   // V4: 社交消费增加社交资本
+                    player.adjustSocialCapital(5);
+                    UI.showToast('社交资本 +5（参与社交活动）', 2000);
                     player.optionalAccepted++;
                     player.recordDecision('spend', card.title, card.amount, 0);
                     UI.addMessage(`跟风消费 -¥${card.amount.toLocaleString()}（满意度+10）`, 'expense');
@@ -1120,7 +1142,8 @@ class Game {
                 label: '专注自己的路', class: 'btn-success',
                 handler: () => {
                     player.adjustSatisfaction(-5);
-                    player.adjustSocialCapital(-8);  // V4: 拒绝社交降低社交资本
+                    player.adjustSocialCapital(-8);
+                    UI.showToast('社交资本 -8（拒绝社交活动）', 2000);
                     player.optionalRejected++;
                     player.recordDecision('refuse_spend', card.title, card.amount, 0);
                     UI.addMessage(`拒绝攀比消费（满意度-5，社交资本-8），3个月后会有好消息...`, 'income');
@@ -1134,6 +1157,78 @@ class Game {
                 }
             }
         ]);
+    }
+
+    // ==============================
+    // V5: 资产互动事件处理
+    // ==============================
+
+    handleAssetInteraction(card) {
+        const player = this.player;
+        const affectedAssets = player.assets.filter(a => a.type === card.requireAssetType);
+
+        const actions = card.choices.map(choice => ({
+            label: choice.label,
+            class: choice.effect === 'none' ? 'btn-secondary' : (choice.cost && player.cash < choice.cost ? 'btn-secondary' : 'btn-success'),
+            disabled: choice.cost ? player.cash < choice.cost : false,
+            handler: () => {
+                switch (choice.effect) {
+                    case 'reduce_income':
+                        player.updateAssetIncomes(card.requireAssetType, choice.multiplier);
+                        if (choice.satisfactionDelta) player.adjustSatisfaction(choice.satisfactionDelta);
+                        if (choice.socialDelta) {
+                            player.adjustSocialCapital(choice.socialDelta);
+                            UI.showToast(`社交资本 +${choice.socialDelta}`, 2000);
+                        }
+                        UI.addMessage(`${card.title}：同意调整，租金下降但保住租客`, 'warning');
+                        break;
+
+                    case 'risk_vacancy':
+                        if (Math.random() < choice.chanceOfLeaving && affectedAssets.length > 0) {
+                            const asset = affectedAssets[0];
+                            const income = player.passiveIncomes.find(p => p.sourceAsset === asset.name);
+                            const loss = income ? income.amount * choice.vacancyMonths : 0;
+                            player.payExpense(loss);
+                            UI.addMessage(`租客搬走了！${choice.vacancyMonths}个月空置，损失 ¥${loss.toLocaleString()}`, 'expense');
+                        } else {
+                            UI.addMessage(`租客接受了现有租金，继续租住`, 'income');
+                            player.adjustSatisfaction(3);
+                        }
+                        break;
+
+                    case 'upgrade_all_income':
+                        player.payExpense(choice.cost);
+                        player.updateAssetIncomes(card.requireAssetType, choice.multiplier);
+                        player.recordDecision('buy', card.title, choice.cost, 0);
+                        UI.addMessage(`批量升级完成！${card.requireAssetType === 'realestate' ? '房产' : '生意'}收入提升${Math.round((choice.multiplier - 1) * 100)}%`, 'income');
+                        break;
+
+                    case 'add_asset':
+                        player.payExpense(choice.cost);
+                        const linkedId = Player.generateLinkedId();
+                        player.assets.push({ ...choice.asset, linkedId, purchaseMonth: player.month, totalEarned: 0, purchasePrice: choice.cost });
+                        player.passiveIncomes.push({ name: choice.asset.name + '收入', amount: choice.monthlyIncome, sourceAsset: choice.asset.name, linkedId });
+                        player.recordDecision('buy', choice.asset.name, choice.cost, choice.monthlyIncome);
+                        UI.addMessage(`合作达成！新增被动收入 +¥${choice.monthlyIncome}/月`, 'income');
+                        break;
+
+                    case 'transform_stock':
+                        player.updateAssetIncomes('stock', choice.incomeMultiplier);
+                        player.updateAssetValues('stock', choice.valueMultiplier);
+                        UI.addMessage(`股票转换完成：分红减半，但价值提升50%`, 'info');
+                        break;
+
+                    case 'none':
+                    default:
+                        UI.addMessage(`你选择了维持现状`, 'info');
+                        break;
+                }
+                UI.updateFinancePanel(player, this.maxMonths);
+                this.checkBankrupt() || this.finishTurn();
+            }
+        }));
+
+        UI.showCard('interaction', card, actions);
     }
 
     // ==============================
@@ -1298,7 +1393,8 @@ class Game {
                 disabled: player.getInvestmentClarity() === 'blind',
                 handler: () => {
                     player.actionUsedThisMonth = true;
-                    player.adjustSocialCapital(2);  // 搜索过程中建立人脉
+                    player.adjustSocialCapital(2);
+                    UI.showToast('社交资本 +2（搜索中建立人脉）', 2000);
                     // 抽一张投资卡
                     let pool = CARDS.opportunity.filter(card => {
                         if ((card.unlockMonth || 1) > player.month) return false;
@@ -1352,6 +1448,7 @@ class Game {
                     player.adjustSocialCapital(10);
                     player.adjustSatisfaction(8);
                     UI.addMessage(`参加社交聚会（社交资本+10，满意度+8）`, 'info');
+                    UI.showToast('社交资本 +10（社交聚会）', 2000);
                     // 医生特性：社交带来投资信息
                     if (player.specialTrait === 'connected' && Math.random() < 0.4) {
                         UI.addMessage(`人脉优势：聚会中获得内部投资消息！`, 'income');
@@ -1372,14 +1469,34 @@ class Game {
         });
     }
 
+    /** 获取当前象限进化条件文本 */
+    getQuadrantConditionText(player) {
+        switch (player.quadrant) {
+            case 'E': {
+                const hasBiz = player.assets.some(a => a.type === 'business');
+                return `E→S: 现金≥¥50,000(当前¥${player.cash.toLocaleString()}) 且 拥有生意(${hasBiz ? '✓' : '✗'}) 且 满意度≥30(${player.satisfaction >= 30 ? '✓' : '✗'})`;
+            }
+            case 'S': {
+                const bizCount = player.assets.filter(a => a.type === 'business').length;
+                const passive = player.getPassiveIncome();
+                return `S→B: 生意≥3个(当前${bizCount}个) 且 被动收入≥¥5,000(当前¥${passive.toLocaleString()}) 且 满意度≥30(${player.satisfaction >= 30 ? '✓' : '✗'})`;
+            }
+            case 'B': {
+                const passive = player.getPassiveIncome();
+                const target = Math.round(player.getTotalExpense() * 0.8);
+                return `B→I: 被动收入≥总支出80%(¥${passive.toLocaleString()}/¥${target.toLocaleString()}) 且 满意度≥30(${player.satisfaction >= 30 ? '✓' : '✗'})`;
+            }
+            case 'I':
+                return '已达最高象限！';
+            default:
+                return '';
+        }
+    }
+
     finishTurn() {
         this.isProcessing = false;
         const player = this.player;
         const remaining = this.maxMonths - player.month + 1;
-
-        // V4: 重置每月主动行动
-        player.actionUsedThisMonth = false;
-        player.searchUsedThisMonth = false;
 
         // V4: 阶段里程碑检查
         this.checkPhaseMilestone();
@@ -1417,19 +1534,30 @@ class Game {
 
         UI.updateFinancePanel(player, this.maxMonths);
 
-        // V4: 动态提示区域（含主动行动按钮）
+        // V5: 动态提示区域（主动行动按钮更突出 + 状态摘要）
         const phaseWarning = remaining <= 12 ? `<p style="color:var(--color-negative);margin-top:8px;font-weight:600;font-size:18px">最后 ${remaining} 个月！</p>` :
                              remaining <= 24 ? `<p style="color:var(--color-gold);margin-top:8px">剩余 ${remaining} 个月</p>` : '';
 
+        const clarityInfo = player.getInvestmentClarity();
+        const clarityLabel = { clear: '', normal: '', foggy: '⚠ 判断力下降', blind: '⚠ 心态崩溃' };
+        const clarityHtml = clarityLabel[clarityInfo] ? `<p style="color:var(--color-expense);font-size:13px;margin-top:4px">${clarityLabel[clarityInfo]}（满意度${player.satisfaction}）</p>` : '';
+
+        // V5: 象限进化提示
+        const quadCondition = this.getQuadrantConditionText(player);
+        const quadHtml = player.quadrant !== 'I' ? `<p style="color:var(--color-text-dim);font-size:12px;margin-top:8px;max-width:400px;margin-left:auto;margin-right:auto">${quadCondition}</p>` : '';
+
         const actionBtnHtml = !player.actionUsedThisMonth ?
-            `<button id="btn-action-menu" class="btn btn-small" style="margin-top:12px;background:rgba(255,213,79,0.15);color:var(--color-gold);border:1px solid rgba(255,213,79,0.3)">主动行动</button>` : '';
+            `<button id="btn-action-menu" class="btn btn-action-main" style="margin-top:16px">🎯 执行主动行动</button>` :
+            `<p style="color:var(--color-text-dim);font-size:12px;margin-top:12px">本月主动行动已用</p>`;
 
         UI.setEventArea(`
             <div style="text-align:center">
                 <p style="font-size:16px;margin-bottom:8px">第 ${player.month} 月 / 共 ${this.maxMonths} 月</p>
-                <p style="color:var(--color-text-dim)">点击下方按钮进入下个月</p>
+                <p style="color:var(--color-text-dim)">点击下方按钮进入下个月，或先执行一次主动行动</p>
                 ${phaseWarning}
+                ${clarityHtml}
                 ${actionBtnHtml}
+                ${quadHtml}
             </div>
         `);
 

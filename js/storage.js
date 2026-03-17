@@ -7,7 +7,7 @@ const Storage = {
     STATS_KEY: 'cashflow_stats',
     ACHIEVE_KEY: 'cashflow_achievements',
     MAX_SLOTS: 3,
-    SAVE_VERSION: 3,
+    SAVE_VERSION: 4,
 
     // === 存档管理 ===
 
@@ -96,6 +96,25 @@ const Storage = {
                 });
             }
             playerData.version = 3;
+        }
+
+        // V3→V4: 补充V4新增字段
+        if (playerData.version < 4) {
+            playerData.socialCapital = playerData.socialCapital !== undefined ? playerData.socialCapital : 50;
+            playerData.specialTrait = playerData.specialTrait || null;
+            playerData.maxLoanAmount = playerData.maxLoanAmount || 100000;
+            playerData.salaryGrowthCap = playerData.salaryGrowthCap || 0;
+            playerData.milestonesPassed = playerData.milestonesPassed || [];
+            playerData.actionUsedThisMonth = false;
+            playerData.searchUsedThisMonth = false;
+            // 从career数据恢复特性（如果career数据存在）
+            if (playerData.careerData) {
+                if (!playerData.specialTrait) playerData.specialTrait = playerData.careerData.specialTrait || null;
+                if (playerData.maxLoanAmount === 100000) playerData.maxLoanAmount = playerData.careerData.maxLoanAmount || 100000;
+                if (playerData.salaryGrowthCap === 0) playerData.salaryGrowthCap = playerData.careerData.salaryGrowthCap || 0;
+                if (playerData.socialCapital === 50) playerData.socialCapital = playerData.careerData.socialCapital || 50;
+            }
+            playerData.version = 4;
         }
 
         return Player.fromJSON(playerData);

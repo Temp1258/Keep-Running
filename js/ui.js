@@ -124,10 +124,14 @@ const UI = {
             incomeItems += `<div class="finance-item finance-tax-line"><span>└ 税(-${Math.round(Player.TAX_RATES.passive * 100)}%)</span><span style="color:var(--color-text-dim)">-¥${tax.toLocaleString()}</span></div>`;
         });
 
-        // 协同加成
+        // V5: 协同加成详情展示
+        const activeSynergies = player.getActiveSynergies();
         const synergyBonus = player.calculateSynergyBonus();
         if (synergyBonus > 0) {
             incomeItems += `<div class="finance-item synergy-line"><span>协同加成</span><span style="color:var(--color-gold)">+¥${synergyBonus.toLocaleString()}</span></div>`;
+            activeSynergies.forEach(syn => {
+                incomeItems += `<div class="finance-item finance-sub-line"><span>└ ${syn.name}(+${Math.round(syn.bonusRate * 100)}%)</span><span style="color:var(--color-gold)">${syn.desc}</span></div>`;
+            });
         }
 
         incomeList.innerHTML = incomeItems;
@@ -641,6 +645,15 @@ const UI = {
             actionsEl.appendChild(btn);
         });
 
+        // V5: 投资清晰度视觉效果
+        const modalCard = document.getElementById('modal-card');
+        modalCard.classList.remove('clarity-foggy', 'clarity-blind');
+        if (type === 'opportunity' && window.game) {
+            const clarity = window.game.player.getInvestmentClarity();
+            if (clarity === 'foggy') modalCard.classList.add('clarity-foggy');
+            else if (clarity === 'blind') modalCard.classList.add('clarity-blind');
+        }
+
         overlay.classList.remove('hidden');
     },
 
@@ -797,6 +810,26 @@ const UI = {
             data.rejectedCosts.slice(0, 3).forEach(r => {
                 detailsHtml += `<div class="detail-row"><span class="detail-label" style="font-size:12px">├ ${r.name} (第${r.month}月放弃)</span><span class="detail-value" style="font-size:12px;color:var(--color-expense)">¥${r.missedTotal.toLocaleString()}</span></div>`;
             });
+        }
+
+        // V5: 协同效应、社交资本、象限进化条件
+        if (data.activeSynergies && data.activeSynergies.length > 0) {
+            detailsHtml += `<div class="detail-row" style="margin-top:8px;border-top:1px solid var(--color-border);padding-top:8px">
+                <span class="detail-label" style="color:var(--color-gold)">协同效应</span>
+                <span class="detail-value" style="color:var(--color-gold)">+¥${data.synergyBonus.toLocaleString()}/月</span>
+            </div>`;
+            data.activeSynergies.forEach(s => {
+                detailsHtml += `<div class="detail-row"><span class="detail-label" style="font-size:12px">├ ${s.name}</span><span class="detail-value" style="font-size:12px">${s.desc}</span></div>`;
+            });
+        }
+
+        detailsHtml += `<div class="detail-row" style="margin-top:8px;border-top:1px solid var(--color-border);padding-top:8px">
+            <span class="detail-label">社交资本</span>
+            <span class="detail-value" style="color:${data.socialCapital >= 50 ? 'var(--color-income)' : data.socialCapital >= 30 ? 'var(--color-gold)' : 'var(--color-expense)'}">${data.socialCapital}</span>
+        </div>`;
+        detailsHtml += `<div class="detail-row"><span class="detail-label">当前象限</span><span class="detail-value">${data.quadrant} 象限</span></div>`;
+        if (data.quadrantConditions) {
+            detailsHtml += `<div class="detail-row"><span class="detail-label" style="font-size:11px;color:var(--color-text-dim)">${data.quadrantConditions}</span><span></span></div>`;
         }
 
         document.getElementById('card-details').innerHTML = detailsHtml;

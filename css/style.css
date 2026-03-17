@@ -496,6 +496,96 @@ body {
     border: 1px solid var(--color-border);
 }
 
+/* ===================================================================
+   V5 新增样式
+   =================================================================== */
+
+/* === 主动行动按钮（更醒目） === */
+.btn-action-main {
+    padding: 12px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(255,213,79,0.2) 0%, rgba(102,187,106,0.2) 100%);
+    color: var(--color-gold);
+    border: 2px solid rgba(255,213,79,0.4);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.3s;
+    animation: actionGlow 2s ease-in-out infinite;
+}
+.btn-action-main:hover {
+    background: linear-gradient(135deg, rgba(255,213,79,0.35) 0%, rgba(102,187,106,0.35) 100%);
+    border-color: var(--color-gold);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(255,213,79,0.2);
+}
+
+/* === 投资清晰度视觉效果 === */
+.clarity-foggy .card-details {
+    filter: blur(2px);
+    position: relative;
+}
+.clarity-foggy .card-details::after {
+    content: '⚠ 心态低落，信息模糊';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: var(--color-gold);
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    filter: none;
+    z-index: 1;
+}
+.clarity-blind .card-details {
+    filter: blur(4px);
+    position: relative;
+}
+.clarity-blind .card-details::after {
+    content: '⚠ 心态崩溃，判断力严重下降（额外支付20%溢价）';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(239,83,80,0.9);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    filter: none;
+    z-index: 1;
+}
+
+/* === 资产互动事件badge === */
+.badge-interaction {
+    background: rgba(102,187,106,0.2);
+    color: var(--color-income);
+}
+
+/* === 协同详情子行优化 === */
+.synergy-detail {
+    font-size: 11px;
+    padding-left: 16px;
+    color: var(--color-gold);
+    opacity: 0.8;
+}
+
+/* === 象限条件提示 === */
+.quadrant-condition-hint {
+    font-size: 11px;
+    color: var(--color-text-dim);
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 4px;
+    margin-top: 4px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+}
+
 /* === 响应式 === */
 @media (max-width: 800px) {
     .game-body { flex-direction: column; }
