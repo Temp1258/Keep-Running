@@ -1,8 +1,9 @@
 /**
- * 事件卡系统 V3
+ * 事件卡系统 V6
  * 类型: opportunity(投资机会), expense(额外支出), market(市场波动), learning(学习),
  *       chain(连锁事件), education(财商教育), fomo(FOMO事件), social(社交攀比),
- *       protection(资产保护), risk(风险事件)
+ *       protection(资产保护), risk(风险事件), loan(贷款相关)
+ * V6: 200+新事件, 贷款相关事件, 长线游戏事件
  */
 
 const CARD_TYPES = {
@@ -18,7 +19,10 @@ const CARD_TYPES = {
     risk: { label: '风险事件', badgeClass: 'badge-expense' },
     satisfaction: { label: '生活事件', badgeClass: 'badge-market' },
     quadrant: { label: '象限进化', badgeClass: 'badge-opportunity' },
-    interaction: { label: '资产互动', badgeClass: 'badge-opportunity' }
+    interaction: { label: '资产互动', badgeClass: 'badge-opportunity' },
+    loan: { label: '贷款事件', badgeClass: 'badge-expense' },
+    career: { label: '职业事件', badgeClass: 'badge-market' },
+    windfall: { label: '意外之财', badgeClass: 'badge-opportunity' }
 };
 
 const CARDS = {
@@ -218,6 +222,169 @@ const CARDS = {
             unlockMonth: 37
         },
 
+        // === 超高级卡 (月份 61+, 长线游戏) ===
+        {
+            id: 'hotel_investment',
+            title: '精品酒店投资',
+            description: '一家精品酒店正在寻找投资人，年均入住率85%，回报稳定。',
+            cost: 600000, downPayment: 150000, monthlyIncome: 5000,
+            liability: { name: '酒店贷款', total: 450000, monthly: 3500 },
+            expense: { name: '酒店贷月供', amount: 3500 },
+            asset: { name: '精品酒店', type: 'realestate', cost: 600000, income: 5000 },
+            tip: '酒店投资回报高但管理复杂。净现金流 = ¥5000 - ¥3500 = ¥1500/月。',
+            unlockMonth: 61
+        },
+        {
+            id: 'solar_farm',
+            title: '太阳能电站',
+            description: '政府补贴的太阳能发电项目，长期稳定的售电收入。',
+            cost: 200000, downPayment: 60000, monthlyIncome: 2000,
+            liability: { name: '电站贷款', total: 140000, monthly: 1200 },
+            expense: { name: '电站贷月供', amount: 1200 },
+            asset: { name: '太阳能电站', type: 'business', cost: 200000, income: 2000 },
+            tip: '新能源是未来趋势。政府补贴降低了风险。净现金流 = ¥2000 - ¥1200 = ¥800/月。',
+            unlockMonth: 61
+        },
+        {
+            id: 'app_platform',
+            title: 'APP平台收购',
+            description: '一个用户量稳定的生活服务APP正在出售，广告和会员收入可观。',
+            cost: 250000, downPayment: 100000, monthlyIncome: 3000,
+            liability: { name: 'APP贷款', total: 150000, monthly: 1500 },
+            expense: { name: 'APP贷月供', amount: 1500 },
+            asset: { name: 'APP平台', type: 'business', cost: 250000, income: 3000 },
+            tip: '互联网平台的边际成本极低。净现金流 = ¥3000 - ¥1500 = ¥1500/月。',
+            unlockMonth: 61
+        },
+        {
+            id: 'medical_clinic',
+            title: '社区诊所加盟',
+            description: '一家连锁社区诊所招加盟，医疗需求刚性，收入非常稳定。',
+            cost: 350000, downPayment: 120000, monthlyIncome: 3500,
+            liability: { name: '诊所贷款', total: 230000, monthly: 2000 },
+            expense: { name: '诊所贷月供', amount: 2000 },
+            asset: { name: '社区诊所', type: 'business', cost: 350000, income: 3500 },
+            tip: '医疗是刚需行业，经济波动影响小。净现金流 = ¥3500 - ¥2000 = ¥1500/月。',
+            unlockMonth: 61
+        },
+        {
+            id: 'ev_charging',
+            title: '电动车充电站',
+            description: '电动车普及带来充电站需求，政府提供场地补贴。',
+            cost: 120000, downPayment: 50000, monthlyIncome: 1500,
+            liability: { name: '充电站贷款', total: 70000, monthly: 600 },
+            expense: { name: '充电站贷月供', amount: 600 },
+            asset: { name: '充电站', type: 'business', cost: 120000, income: 1500 },
+            tip: '把握时代趋势就是把握财富机会。净现金流 = ¥1500 - ¥600 = ¥900/月。',
+            unlockMonth: 61
+        },
+        {
+            id: 'coworking_space',
+            title: '共享办公空间',
+            description: '市中心有一层楼可以改造成共享办公空间，灵活租赁市场需求旺盛。',
+            cost: 400000, downPayment: 100000, monthlyIncome: 4500,
+            liability: { name: '共享办公贷款', total: 300000, monthly: 2500 },
+            expense: { name: '共享办公贷月供', amount: 2500 },
+            asset: { name: '共享办公空间', type: 'realestate', cost: 400000, income: 4500 },
+            tip: '共享经济模式：用空间分时租赁提高坪效。净现金流 = ¥4500 - ¥2500 = ¥2000/月。',
+            unlockMonth: 61
+        },
+        {
+            id: 'mini_storage',
+            title: '迷你仓储连锁',
+            description: '城市居民空间有限，迷你仓储需求大增，一个成熟品牌招加盟。',
+            cost: 180000, downPayment: 60000, monthlyIncome: 2200,
+            liability: { name: '仓储贷款', total: 120000, monthly: 1000 },
+            expense: { name: '仓储加盟贷月供', amount: 1000 },
+            asset: { name: '迷你仓储', type: 'business', cost: 180000, income: 2200 },
+            tip: '仓储业务运营成本低，利润率高。净现金流 = ¥2200 - ¥1000 = ¥1200/月。',
+            unlockMonth: 61
+        },
+        {
+            id: 'dividend_etf',
+            title: '高股息ETF组合',
+            description: '理财师帮你构建了一个分散化的高股息ETF组合，年化分红约7%。',
+            cost: 80000, downPayment: 80000, monthlyIncome: 470,
+            asset: { name: '高股息ETF', type: 'fund', cost: 80000, income: 470 },
+            tip: 'ETF组合比单只股票风险更低，且分红稳定。被动投资的典范。',
+            unlockMonth: 61
+        },
+        // === 终极卡 (月份 100+) ===
+        {
+            id: 'shopping_mall',
+            title: '商业综合体份额',
+            description: '一座新建商业综合体招募投资人，你可以购买一个份额获得租金分成。',
+            cost: 1000000, downPayment: 300000, monthlyIncome: 8000,
+            liability: { name: '商场贷款', total: 700000, monthly: 5500 },
+            expense: { name: '商场贷月供', amount: 5500 },
+            asset: { name: '商业综合体份额', type: 'realestate', cost: 1000000, income: 8000 },
+            tip: '这是重量级投资。净现金流 = ¥8000 - ¥5500 = ¥2500/月。需要雄厚的资金基础。',
+            unlockMonth: 100
+        },
+        {
+            id: 'private_equity',
+            title: '私募基金份额',
+            description: '一位圈内好友邀你参与一只私募基金，历史年化回报15%。',
+            cost: 200000, downPayment: 200000, monthlyIncome: 2500,
+            asset: { name: '私募基金', type: 'fund', cost: 200000, income: 2500 },
+            tip: '私募门槛高但回报也高。适合有经验的投资者。',
+            unlockMonth: 100
+        },
+        {
+            id: 'franchise_empire',
+            title: '加盟帝国扩张',
+            description: '你已经是成功的加盟商，总部给你更多城市的独家代理权。',
+            cost: 500000, downPayment: 200000, monthlyIncome: 6000,
+            liability: { name: '扩张贷款', total: 300000, monthly: 2500 },
+            expense: { name: '扩张贷月供', amount: 2500 },
+            asset: { name: '区域代理权', type: 'business', cost: 500000, income: 6000 },
+            tip: '从单店到区域代理，这是B象限的终极进化。净现金流 = ¥6000 - ¥2500 = ¥3500/月。',
+            unlockMonth: 100
+        },
+        {
+            id: 'data_center',
+            title: '数据中心投资',
+            description: 'AI时代算力需求爆发，一个小型数据中心项目正在募资。',
+            cost: 800000, downPayment: 250000, monthlyIncome: 7000,
+            liability: { name: '数据中心贷款', total: 550000, monthly: 4500 },
+            expense: { name: '数据中心贷月供', amount: 4500 },
+            asset: { name: '数据中心', type: 'business', cost: 800000, income: 7000 },
+            tip: '技术基础设施是数字时代的"房地产"。净现金流 = ¥7000 - ¥4500 = ¥2500/月。',
+            unlockMonth: 100
+        },
+        // === 月份 130+ 超级资产 ===
+        {
+            id: 'resort_villa',
+            title: '度假别墅群',
+            description: '风景区有一组度假别墅出售，可以做民宿运营，旺季收入非常可观。',
+            cost: 1500000, downPayment: 400000, monthlyIncome: 12000,
+            liability: { name: '别墅贷款', total: 1100000, monthly: 8000 },
+            expense: { name: '别墅贷月供', amount: 8000 },
+            asset: { name: '度假别墅群', type: 'realestate', cost: 1500000, income: 12000 },
+            tip: '旅游地产回报高但有季节性。净现金流 = ¥12000 - ¥8000 = ¥4000/月。',
+            unlockMonth: 130
+        },
+        {
+            id: 'venture_fund',
+            title: '创投基金LP',
+            description: '一只知名创投基金向你开放了LP份额，投资早期科技公司。',
+            cost: 500000, downPayment: 500000, monthlyIncome: 5000,
+            asset: { name: '创投基金LP', type: 'fund', cost: 500000, income: 5000 },
+            tip: '创投是高风险高回报的I象限投资。只用你能承受损失的钱。',
+            unlockMonth: 130
+        },
+        {
+            id: 'industrial_park',
+            title: '产业园区份额',
+            description: '政府主导的产业园区招商，你可以购买一个厂房单元出租给制造企业。',
+            cost: 2000000, downPayment: 500000, monthlyIncome: 15000,
+            liability: { name: '厂房贷款', total: 1500000, monthly: 10000 },
+            expense: { name: '厂房贷月供', amount: 10000 },
+            asset: { name: '产业园厂房', type: 'realestate', cost: 2000000, income: 15000 },
+            tip: '工业地产租约长、收入稳。净现金流 = ¥15000 - ¥10000 = ¥5000/月。',
+            unlockMonth: 130
+        },
+
         // === S象限专属卡 ===
         {
             id: 'personal_studio',
@@ -386,6 +553,173 @@ const CARDS = {
             addLiability: { name: '信用卡分期', total: 14400, monthly: 800 },
             tip: '信用卡分期是最常见的负债陷阱。看似每月只还¥800，但总共要还¥14400——多付了44%的利息！'
         },
+        // === V6: 新增额外支出事件 ===
+        {
+            id: 'pet_emergency', title: '宠物急诊',
+            description: '你的宠物突然生病了，需要紧急手术。',
+            amount: 3500,
+            tip: '宠物也是家庭成员，但宠物医疗费可不便宜。考虑给宠物买保险？'
+        },
+        {
+            id: 'speeding_ticket', title: '超速罚单',
+            description: '不小心超速了，收到一张罚单。',
+            amount: 500,
+            tip: '遵守交通规则不仅安全，也省钱。小额罚款积少成多也是一笔不小的支出。'
+        },
+        {
+            id: 'dental_work', title: '牙科治疗',
+            description: '牙疼不是病，疼起来要人命。你需要做一次牙科手术。',
+            amount: 4000, medicalType: true,
+            tip: '定期体检和口腔护理可以避免高额治疗费。预防胜于治疗。'
+        },
+        {
+            id: 'water_damage', title: '水管爆裂',
+            description: '家里水管突然爆裂，需要紧急维修并赔偿楼下邻居的损失。',
+            amount: 3000,
+            tip: '房屋维护是隐性支出。定期检查家中设施可以避免大额意外支出。'
+        },
+        {
+            id: 'gym_membership', title: '健身房会员',
+            description: '朋友推荐了一家高档健身房，年卡优惠价格有限期。要办卡吗？',
+            amount: 4800, optional: true,
+            satisfactionRestore: 10,
+            tip: '健康投资很重要，但也要量力而行。免费跑步和高价健身房效果差别不大。'
+        },
+        {
+            id: 'home_appliance', title: '家电更换',
+            description: '冰箱突然坏了，食物全部变质，急需购买新冰箱。',
+            amount: 2500,
+            tip: '家电是消耗品，要预留更换预算。选择质量好的产品虽然贵但长期更划算。'
+        },
+        {
+            id: 'traffic_accident', title: '轻微交通事故',
+            description: '上班路上发生了一起轻微剐蹭，对方要求你赔偿修理费。',
+            amount: 2000,
+            tip: '车险可以覆盖大部分交通事故费用。如果没有保险，自掏腰包会很痛。'
+        },
+        {
+            id: 'online_scam', title: '网络诈骗',
+            description: '不小心点了一个钓鱼链接，银行卡被盗刷了一笔钱。',
+            amount: 3000,
+            tip: '网络安全意识很重要。不要点击不明链接，定期更换密码，开启二次验证。'
+        },
+        {
+            id: 'festival_gifts', title: '节日礼物',
+            description: '春节到了，需要给父母、亲戚、朋友准备礼物和红包。',
+            amount: 2000,
+            tip: '节日开支是可预测的。提前规划，把这部分预算纳入月度支出计划中。'
+        },
+        {
+            id: 'moving_cost', title: '搬家费用',
+            description: '房东要收回房子，你需要搬到新住所。搬家费加上新家布置费用不少。',
+            amount: 3500,
+            tip: '租房的不确定性就是隐性成本。拥有自己的出租房，至少你不会被"赶走"。'
+        },
+        {
+            id: 'fashion_tempt', title: '换季购衣',
+            description: '换季了，衣柜里似乎没有合适的衣服。商场正在打折。',
+            amount: 2500, optional: true,
+            tip: '衣服的需要和想要差距很大。胶囊衣橱理念：少而精，减少冲动消费。'
+        },
+        {
+            id: 'subscription_trap', title: '订阅陷阱',
+            description: '清理账户时发现你有5个已经不用的订阅服务，每月扣款。要继续还是取消？',
+            amount: 0, optional: true,
+            addExpenseOnly: { name: '订阅服务', amount: 150, inflatable: false },
+            tip: '订阅经济的陷阱：单个不贵但积少成多。定期检查所有自动扣费项目。'
+        },
+        {
+            id: 'education_loan', title: '孩子出国留学',
+            description: '孩子拿到了国外大学offer，首年费用需要一大笔钱。',
+            amount: 15000, optional: true,
+            addExpense: { name: '留学费用', amount: 800 },
+            addLiability: { name: '教育贷', total: 50000, monthly: 800 },
+            tip: '教育是最好的投资——但也要考虑投资回报。留学是投资还是消费，取决于之后的发展。'
+        },
+        {
+            id: 'elderly_care', title: '养老护理费',
+            description: '父母年纪大了，需要请护工照顾，每月增加固定支出。',
+            amount: 0,
+            addExpenseOnly: { name: '护工费用', amount: 500, inflatable: true },
+            tip: '老龄化时代，养老支出是每个家庭必须面对的课题。提早规划养老金。'
+        },
+        {
+            id: 'crypto_fomo', title: '加密货币热潮',
+            description: '朋友靠炒币赚了大钱，你心动了。要投入一笔试试吗？高风险！',
+            amount: 5000, optional: true,
+            tip: '加密货币波动极大。朋友赚钱的故事背后，有无数亏损的人沉默不语。'
+        },
+        {
+            id: 'kid_illness', title: '孩子生病',
+            description: '孩子感冒发烧转为肺炎，需要住院治疗。',
+            amount: 4000, medicalType: true,
+            tip: '孩子的医疗支出往往来得突然。为家庭成员都买好保险是基本保障。'
+        },
+        {
+            id: 'upgrade_phone', title: '手机碎屏',
+            description: '手机屏幕摔碎了，维修费几乎等于买新的。',
+            amount: 1500,
+            tip: '手机壳和贴膜是最便宜的"保险"。几十块钱可能省下几千块维修费。'
+        },
+        {
+            id: 'wedding_banquet', title: '参加同事婚礼',
+            description: '这个月有3个同事结婚，每个都邀请了你。随份子钱少不了。',
+            amount: 1800,
+            tip: '社交开支是固定成本。提前规划这类预算，避免影响投资计划。'
+        },
+        {
+            id: 'property_tax', title: '房产税',
+            description: '新的房产税政策出台，你持有的房产需要缴纳年度税款。',
+            amount: 3000,
+            tip: '持有资产的成本不仅仅是月供。税费、维护、保险都要考虑在内。'
+        },
+        {
+            id: 'business_dinner', title: '商务应酬',
+            description: '有一个重要的商务饭局，你需要请客。费用不便宜。',
+            amount: 1200, optional: true,
+            tip: '必要的社交投资可以带来商业机会。但要区分"投资型社交"和"消费型社交"。'
+        },
+        {
+            id: 'car_insurance', title: '车险续费',
+            description: '车辆保险到期了，需要续费。',
+            amount: 3000,
+            tip: '保险是必要开支。选择合适的保额，不多不少，避免过度保险也避免保障不足。'
+        },
+        {
+            id: 'laptop_broken', title: '电脑故障',
+            description: '工作电脑突然坏了，数据可能丢失，急需维修或更换。',
+            amount: 4000,
+            tip: '工具设备是生产力的保障。重要数据一定要有备份。'
+        },
+        {
+            id: 'beauty_spa', title: '美容SPA',
+            description: '朋友拉你一起去高档SPA放松一下，价格不菲但听起来很诱人。',
+            amount: 1500, optional: true,
+            satisfactionRestore: 8,
+            tip: '适度的放松是必要的，但要控制频率和预算。'
+        },
+        {
+            id: 'house_decoration', title: '房屋装饰',
+            description: '看到邻居家装修得很漂亮，你也想重新装饰一下自己的家。',
+            amount: 5000, optional: true,
+            satisfactionRestore: 12,
+            tip: '居住环境确实影响幸福感，但"装饰"和"翻新"的投入产出比差很多。'
+        },
+        {
+            id: 'concert_tickets', title: '演唱会门票',
+            description: '你最喜欢的歌手要来演出了！黄牛票价格翻了好几倍。',
+            amount: 2000, optional: true,
+            satisfactionRestore: 15,
+            tip: '体验消费也有价值，但要在预算范围内。原价买不到就别追高价票了。'
+        },
+        {
+            id: 'gaming_setup', title: '游戏装备升级',
+            description: '新出的游戏对配置要求很高，需要升级你的电脑或买新主机。',
+            amount: 4000, optional: true,
+            satisfactionRestore: 10,
+            tip: '娱乐设备更新换代太快。明确你真正的需求，避免为营销噱头买单。'
+        },
+
         // === V3: 报复性消费（满意度低时触发） ===
         {
             id: 'revenge_spend', title: '报复性消费',
@@ -478,6 +812,79 @@ const CARDS = {
             description: '经济形势大好，所有投资类资产普遍升值20%！',
             globalMultiplier: 1.2,
             tip: '经济繁荣期是资产增值最快的时期。但记住：周期总会转换，繁荣之后可能是衰退。'
+        },
+        // === V6: 新增市场波动事件 ===
+        {
+            id: 'inflation_spike', title: '通胀飙升',
+            description: '物价飞涨，你的固定支出增加了15%，但资产价值也水涨船高。',
+            inflationEffect: { expenseIncrease: 0.15, assetIncrease: 0.1 },
+            tip: '通胀是双刃剑：负债被稀释，但生活成本也上升。持有资产的人受益更多。'
+        },
+        {
+            id: 'tech_disruption', title: '科技颠覆',
+            description: 'AI技术革命冲击传统行业，你的部分生意受到影响，收入下降。',
+            assetType: 'business', incomeMultiplier: 0.75,
+            tip: '技术变革是最大的商业风险之一。持续学习和创新是应对颠覆的唯一方法。'
+        },
+        {
+            id: 'realestate_bubble', title: '房地产泡沫',
+            description: '房价已经涨到不可思议的高度！你的房产价值暴涨，但泡沫似乎随时可能破裂。',
+            assetType: 'realestate', multiplier: 1.8,
+            tip: '泡沫总会破裂。问题是：你能在破裂前卖出吗？还是继续持有等现金流？'
+        },
+        {
+            id: 'pandemic_effect', title: '疫情冲击',
+            description: '突发公共卫生事件，经济活动暂停，你的生意收入暂时下降40%。',
+            assetType: 'business', incomeMultiplier: 0.6,
+            tip: '黑天鹅事件无法预测。保持充足的现金储备是抵御意外的最好方式。'
+        },
+        {
+            id: 'stock_recovery', title: '股市反弹',
+            description: '经历下跌后，股市强劲反弹！你的股票资产价值回升30%。',
+            assetType: 'stock', multiplier: 1.3,
+            tip: '市场总是会恢复的——如果你有耐心持有。恐慌卖出是最大的敌人。'
+        },
+        {
+            id: 'currency_devalue', title: '汇率波动',
+            description: '人民币贬值，你的部分海外资产以人民币计价升值了。',
+            assetType: 'fund', multiplier: 1.15,
+            tip: '持有一些海外资产可以对冲汇率风险。全球化配置是分散风险的高级策略。'
+        },
+        {
+            id: 'green_policy', title: '绿色经济政策',
+            description: '政府大力推动绿色经济，新能源相关资产获得额外补贴。',
+            assetType: 'business', incomeMultiplier: 1.25,
+            tip: '政策导向是重要的投资信号。顺势而为往往事半功倍。'
+        },
+        {
+            id: 'rental_regulation', title: '租金管控政策',
+            description: '政府出台租金管控政策，你的出租房租金被限制上涨。',
+            assetType: 'realestate', incomeMultiplier: 0.9,
+            tip: '政策风险是房地产投资的一部分。多城市分散投资可以降低单一政策的影响。'
+        },
+        {
+            id: 'bond_yield_rise', title: '国债收益率上升',
+            description: '国债收益率走高，你的债券类资产收益跟着提升。',
+            assetType: 'fund', incomeMultiplier: 1.15,
+            tip: '债券市场和利率密切相关。关注央行政策可以帮你更好地配置债券类资产。'
+        },
+        {
+            id: 'market_crash', title: '市场闪崩',
+            description: '金融市场突然暴跌！所有资产价值缩水25%！',
+            globalMultiplier: 0.75,
+            tip: '市场崩盘对所有人一视同仁。但手握现金的人能在低价买入优质资产。危机就是机遇。'
+        },
+        {
+            id: 'ecommerce_boom', title: '电商爆发',
+            description: '线上消费持续增长，你的网店和电商相关资产收入大增。',
+            assetType: 'business', incomeMultiplier: 1.3,
+            tip: '线上经济的增长还远未到顶。拥有线上业务的人会持续受益。'
+        },
+        {
+            id: 'population_aging', title: '老龄化效应',
+            description: '老龄化社会到来，医疗和养老相关产业蓬勃发展。',
+            assetType: 'business', incomeMultiplier: 1.15,
+            tip: '人口趋势是最确定的长期趋势。医疗养老是确定性最高的赛道之一。'
         }
     ],
 
@@ -577,6 +984,103 @@ const CARDS = {
             options: ['不赚钱就不用交税', '只拿现金', '逃税', '通过合法的资产结构降低税负'],
             answer: 3, reward: 1000,
             explanation: '富人通过公司、房产折旧、合理的资产结构来合法降低税负。这就是为什么富爸爸说"税法是为了鼓励投资而设计的"。'
+        },
+        // === V6: 新增学习题目 ===
+        {
+            id: 'q17', question: '什么是"杠杆"在投资中的含义？',
+            options: ['用别人的钱来放大投资回报', '一种健身器材', '贷款利率', '股票交易手续费'],
+            answer: 0, reward: 1500,
+            explanation: '杠杆就是借助外力（通常是借款）来放大投资回报。用10万首付买50万的房子，就是5倍杠杆。收益放大，但风险也放大。'
+        },
+        {
+            id: 'q18', question: '以下哪个最接近"现金流象限"中B象限的特征？',
+            options: ['自己做所有的事', '拥有一个能自动运转的系统', '帮别人打工', '纯靠投资赚钱'],
+            answer: 1, reward: 1500,
+            explanation: 'B象限的核心是建立系统。你不需要亲自参与日常运营，系统（团队、流程、品牌）会为你工作。'
+        },
+        {
+            id: 'q19', question: '什么是"复利效应"？',
+            options: ['利息加利息，收益像雪球般增长', '复杂的利率计算', '多个银行同时存款', '反复申请贷款'],
+            answer: 0, reward: 1000,
+            explanation: '复利是"利滚利"——你的收益会产生新的收益。爱因斯坦称复利为"世界第八大奇迹"。时间越长，效果越惊人。'
+        },
+        {
+            id: 'q20', question: '以下哪种是最被动的收入？',
+            options: ['自由职业收入', '租金收入', '加班工资', '送外卖收入'],
+            answer: 1, reward: 1000,
+            explanation: '租金收入是典型的被动收入——房子在那里，租客每月付租金，你不需要每天去"上班"。自由职业虽然自由，但仍是用时间换钱。'
+        },
+        {
+            id: 'q21', question: '"ESBI象限"中，E代表什么？',
+            options: ['企业家', '雇员', '经济学家', '专家'],
+            answer: 1, reward: 1000,
+            explanation: 'E=Employee（雇员），S=Self-employed（自雇），B=Business owner（企业主），I=Investor（投资者）。大多数人在E象限。'
+        },
+        {
+            id: 'q22', question: '负债率多少算健康？',
+            options: ['0%最好', '30%以下', '50%以下', '越高越好'],
+            answer: 1, reward: 1000,
+            explanation: '一般认为负债率（月还款额/月收入）在30%以下比较健康。超过50%就有较高的财务风险。0%虽然安全但可能错失杠杆机会。'
+        },
+        {
+            id: 'q23', question: '什么是"机会成本"？',
+            options: ['投资的手续费', '选择一个选项后放弃的其他最佳选项的价值', '做生意的成本', '抓住机会的花费'],
+            answer: 1, reward: 1500,
+            explanation: '把5万元存银行，机会成本就是这5万元用来投资可能获得的更高收益。每一次选择都有机会成本。'
+        },
+        {
+            id: 'q24', question: '为什么现金不是好资产？',
+            options: ['因为现金会被偷', '因为通货膨胀会让现金贬值', '因为银行利率太低', '现金其实是好资产'],
+            answer: 1, reward: 1000,
+            explanation: '通胀让现金购买力持续下降。每年3%的通胀意味着10年后你的钱只值原来的74%。现金是"确定会贬值的资产"。'
+        },
+        {
+            id: 'q25', question: '什么是"沉没成本"？',
+            options: ['投到水里的钱', '已经花掉且无法收回的成本', '打折后的差价', '建筑地基的费用'],
+            answer: 1, reward: 1500,
+            explanation: '已经花掉且无法收回的钱就是沉没成本。理性决策应该忽略沉没成本，只看未来的收益和风险。'
+        },
+        {
+            id: 'q26', question: '以下哪个是"好习惯"？',
+            options: ['先消费再存剩下的', '先存/投资一部分，再消费', '等发财了再理财', '有多少花多少'],
+            answer: 1, reward: 1000,
+            explanation: '这就是"先付自己"原则。每月收入先拿出一定比例用于储蓄和投资，剩余的才是消费预算。'
+        },
+        {
+            id: 'q27', question: '什么情况下应该卖出资产？',
+            options: ['市场下跌恐慌时', '有更好的投资机会需要资金时', '朋友都在卖的时候', '资产刚买就涨了一点时'],
+            answer: 1, reward: 1500,
+            explanation: '卖出资产应该是理性决策：要么有更好的投资机会，要么基本面发生了不可逆的变化。恐慌和跟风不是理由。'
+        },
+        {
+            id: 'q28', question: '为什么多元化投资很重要？',
+            options: ['让账单看起来更复杂', '分散风险，避免全部亏损', '因为银行要求的', '给理财顾问更多佣金'],
+            answer: 1, reward: 1000,
+            explanation: '不同资产类别在不同市场环境下表现不同。股票跌时房产可能涨，反之亦然。多元化让你的整体风险降低。'
+        },
+        {
+            id: 'q29', question: '信用评分主要受什么影响？',
+            options: ['年龄和性别', '还款记录和负债比率', '银行余额多少', '社交媒体关注数'],
+            answer: 1, reward: 1000,
+            explanation: '信用评分主要看你的还款历史、负债水平、信用历史长度、信用类型多样性等。按时还款是维持好信用的关键。'
+        },
+        {
+            id: 'q30', question: '以下哪种心态最有利于投资？',
+            options: ['一夜暴富', '长期主义', '跟风操作', '追涨杀跌'],
+            answer: 1, reward: 1500,
+            explanation: '长期主义是最重要的投资心态。巴菲特说"我的财富来自于美国，长期投资，和复利效应的组合"。'
+        },
+        {
+            id: 'q31', question: '什么是"现金流"？',
+            options: ['银行取出现金', '收入减去支出的净额', '现金的流通量', '存款利息'],
+            answer: 1, reward: 1000,
+            explanation: '现金流 = 收入 - 支出。正现金流意味着你的钱在增加，负现金流意味着你在"失血"。管理好现金流是财务健康的基础。'
+        },
+        {
+            id: 'q32', question: '贷款买资产算"好负债"的前提是？',
+            options: ['利率很低', '资产产生的收入大于贷款还款额', '别人都这样做', '银行愿意借'],
+            answer: 1, reward: 1500,
+            explanation: '好负债的核心：资产产生的收入要能覆盖贷款成本并有盈余。月租金3000的房子，月供2000，正现金流1000，这就是好负债。'
         }
     ]
 };
@@ -680,6 +1184,43 @@ const RISK_EVENTS = [
             3: { type: 'choose', desc: '可以选择保留' }
         },
         tip: '政策风险是不可控的。分散投资类型可以降低政策变动带来的影响。'
+    },
+    // === V6: 新增风险事件 ===
+    {
+        id: 'cyber_attack',
+        title: '网络攻击',
+        description: '你的业务系统遭到黑客攻击，客户数据泄露，面临巨额赔偿。',
+        effects: {
+            0: { type: 'pay_fine', amount: 10000, desc: '赔偿¥10,000' },
+            1: { type: 'pay_fine', amount: 8000, desc: '赔偿¥8,000' },
+            2: { type: 'pay_fine', amount: 5000, desc: '赔偿¥5,000' },
+            3: { type: 'pay_fine', amount: 3000, desc: '赔偿¥3,000（信托保护）' }
+        },
+        tip: '数字时代的网络安全风险不可忽视。定期更新安全系统是必要的投入。'
+    },
+    {
+        id: 'partner_fraud',
+        title: '合伙人诈骗',
+        description: '你的一个商业合伙人卷款潜逃！部分投资打了水漂。',
+        effects: {
+            0: { type: 'lose_asset', desc: '失去1个资产' },
+            1: { type: 'lose_asset', desc: '失去1个资产' },
+            2: { type: 'pay_fine', amount: 8000, desc: '损失¥8,000' },
+            3: { type: 'pay_fine', amount: 4000, desc: '损失¥4,000（信托保护）' }
+        },
+        tip: '选择合伙人要比选择投资更谨慎。法律文件和资产隔离是最好的防线。'
+    },
+    {
+        id: 'market_manipulation',
+        title: '市场操纵丑闻',
+        description: '你投资的某只基金被查出市场操纵行为，基金被暂停交易。',
+        effects: {
+            0: { type: 'asset_devalue', multiplier: 0.5, desc: '基金资产贬值50%' },
+            1: { type: 'asset_devalue', multiplier: 0.6, desc: '基金资产贬值40%' },
+            2: { type: 'asset_devalue', multiplier: 0.7, desc: '基金资产贬值30%' },
+            3: { type: 'asset_devalue', multiplier: 0.8, desc: '基金资产贬值20%' }
+        },
+        tip: '选择合规的投资机构和产品。监管套利看似诱人，实则风险巨大。'
     }
 ];
 
@@ -811,12 +1352,332 @@ const CHAIN_EVENTS = [
         description: '你持有的基金更换了基金经理，市场对此反应不一，基金收益暂时下降10%。',
         effect: 'upgrade_income', cost: 0, incomeMultiplier: 0.9,
         tip: '主动管理型基金受基金经理影响很大。这也是指数基金（被动管理）受欢迎的原因之一。'
+    },
+    // === V6: 新增连锁事件 ===
+    {
+        id: 'natural_disaster', requireAssetType: 'realestate',
+        title: '自然灾害', type: 'chain',
+        description: '暴雨导致你的出租房被淹，需要花钱修复。维修期间3个月无租金收入。',
+        effect: 'lose_income_months', months: 3, repairCost: 5000,
+        tip: '自然灾害风险不可忽视。房产保险可以覆盖大部分损失。'
+    },
+    {
+        id: 'viral_marketing', requireAssetType: 'business',
+        title: '爆款营销', type: 'chain',
+        description: '你的生意突然在社交媒体上走红，短视频播放量破百万！收入暴涨50%。',
+        effect: 'upgrade_income', cost: 0, incomeMultiplier: 1.5,
+        tip: '网络效应可以让小生意一夜成名。保持产品质量才能留住新客户。'
+    },
+    {
+        id: 'key_employee_quit', requireAssetType: 'business',
+        title: '核心员工离职', type: 'chain',
+        description: '你的得力干将被竞争对手挖走了，生意效率下降，利润减少20%。',
+        effect: 'upgrade_income', cost: 0, incomeMultiplier: 0.8,
+        tip: '人才是最重要的资产。建立良好的激励机制才能留住核心团队。'
+    },
+    {
+        id: 'dividend_surprise', requireAssetType: 'stock',
+        title: '意外高分红', type: 'chain',
+        description: '你持有的一家公司业绩超预期，宣布发放特别分红！你获得一笔额外收入。',
+        effect: 'cash_bonus', amount: 5000,
+        tip: '选择优质公司长期持有，偶尔会有意外惊喜。这就是价值投资的魅力。'
+    },
+    {
+        id: 'tenant_damage', requireAssetType: 'realestate',
+        title: '租客损坏房屋', type: 'chain',
+        description: '租客搬走后你发现房屋被严重损坏，需要花钱修复。',
+        effect: 'pay_fine', amount: 4000,
+        tip: '收取合理的押金可以减少此类损失。筛选租客也很重要。'
+    },
+    {
+        id: 'government_subsidy', requireAssetType: 'business',
+        title: '政府补贴', type: 'chain',
+        description: '你的生意符合政府扶持政策，获得了一笔创业补贴！',
+        effect: 'cash_bonus', amount: 8000,
+        tip: '关注政府的产业政策和补贴信息，合理利用政策红利。'
+    },
+    {
+        id: 'fund_bonus_dividend', requireAssetType: 'fund',
+        title: '基金年终大分红', type: 'chain',
+        description: '你持有的基金年底清算，分红比预期高出很多！',
+        effect: 'cash_bonus', amount: 3000,
+        tip: '选择历史分红记录好的基金，长期来看能获得更稳定的回报。'
+    },
+    {
+        id: 'supply_chain_issue', requireAssetType: 'business',
+        title: '供应链问题', type: 'chain',
+        description: '原材料价格上涨，你的生意成本增加，利润下降15%。',
+        effect: 'upgrade_income', cost: 0, incomeMultiplier: 0.85,
+        tip: '供应链风险是生意的常见挑战。建立多个供应商渠道可以降低风险。'
+    },
+    {
+        id: 'stock_ipo_gain', requireAssetType: 'stock',
+        title: '持股公司IPO', type: 'chain',
+        description: '你投资的一家公司成功IPO上市！股价暴涨，你的股权价值翻了3倍！',
+        effect: 'force_sell', multiplier: 3.0,
+        tip: 'IPO是投资者梦寐以求的退出方式。但记得及时兑现利润，纸面富贵不是真富贵。'
+    },
+    {
+        id: 'realestate_appreciation', requireAssetType: 'realestate',
+        title: '地铁规划利好', type: 'chain',
+        description: '政府公布了新的地铁线路规划，你的房产正好在站点附近！价值上涨40%。',
+        effect: 'asset_appreciate', multiplier: 1.4,
+        tip: '跟着城市规划买房是房产投资的黄金法则。信息就是财富。'
+    },
+    {
+        id: 'business_award', requireAssetType: 'business',
+        title: '获得行业大奖', type: 'chain',
+        description: '你的生意获得了行业大奖，品牌知名度大增，客户量上涨，收入增加25%！',
+        effect: 'upgrade_income', cost: 0, incomeMultiplier: 1.25,
+        tip: '品牌价值是无形资产。好口碑能带来源源不断的客户。'
+    }
+];
+
+/**
+ * V6: 贷款相关事件
+ */
+const LOAN_EVENTS = [
+    {
+        id: 'loan_rate_drop',
+        title: '贷款利率优惠',
+        description: '银行通知你，由于你信用良好，给你的贷款利率降低了！月供减少10%。',
+        effect: 'reduce_loan_payment', multiplier: 0.9,
+        requireLoan: true,
+        tip: '良好的信用记录是宝贵的无形资产。它能为你节省大量利息支出。'
+    },
+    {
+        id: 'loan_penalty',
+        title: '逾期罚息',
+        description: '这个月现金紧张，贷款差点逾期！银行收取了一笔罚息。',
+        effect: 'pay_fine', amount: 1000,
+        requireLoan: true, creditScoreDelta: -30,
+        tip: '贷款逾期不仅要付罚息，还会严重影响信用评分。一定要预留还款资金。'
+    },
+    {
+        id: 'refinance_offer',
+        title: '贷款重组机会',
+        description: '银行提供贷款重组方案：降低月供但延长还款期。总利息会增加，但现金流改善。',
+        effect: 'refinance', monthlyReduction: 0.7, termExtension: 1.5,
+        requireLoan: true, optional: true,
+        tip: '重组降低了短期压力但增加了总成本。权衡短期现金流和长期利息负担。'
+    },
+    {
+        id: 'credit_score_up',
+        title: '信用评分提升',
+        description: '你连续按时还款，银行提升了你的信用评级。贷款额度增加！',
+        effect: 'credit_boost', creditScoreDelta: 30,
+        requireLoan: true,
+        tip: '信用评分像是你的"财务成绩单"。持续优秀的还款记录是提分的关键。'
+    },
+    {
+        id: 'loan_collector',
+        title: '催收电话',
+        description: '因为现金流紧张，你的某笔贷款已经逾期。催收公司开始打电话了。',
+        effect: 'pay_fine', amount: 2000, creditScoreDelta: -50,
+        requireLoan: true,
+        tip: '逾期到催收阶段会严重影响信用。宁可卖掉一个资产也不要让贷款逾期。',
+        triggerCondition: 'low_cash'
+    },
+    {
+        id: 'early_repay_bonus',
+        title: '提前还贷优惠',
+        description: '银行推出限时活动：提前还清贷款可免除剩余利息的20%。',
+        effect: 'early_repay_discount', discount: 0.2,
+        requireLoan: true, optional: true,
+        tip: '提前还贷节省利息，但也要考虑这笔钱投资出去是否收益更高。'
+    }
+];
+
+/**
+ * V6: 职业事件
+ */
+const CAREER_EVENTS = [
+    {
+        id: 'salary_raise',
+        title: '加薪通知',
+        description: '老板对你的工作很满意，决定给你加薪15%！',
+        effect: 'salary_change', multiplier: 1.15,
+        tip: '加薪很好，但别忘了避免"收入陷阱"——赚得越多，花得越多。把多出的部分用于投资。'
+    },
+    {
+        id: 'salary_cut',
+        title: '降薪通知',
+        description: '公司效益不好，全员降薪10%。',
+        effect: 'salary_change', multiplier: 0.9,
+        tip: '这就是为什么不能只依赖工资收入。被动收入才是你的安全网。'
+    },
+    {
+        id: 'layoff_scare',
+        title: '裁员风波',
+        description: '公司正在裁员，你虽然保住了工作，但内心很不安。满意度下降。',
+        effect: 'satisfaction_change', delta: -15,
+        tip: '就业危机是最好的创业/投资动力。在E象限永远没有真正的安全感。'
+    },
+    {
+        id: 'overtime_bonus',
+        title: '加班奖金',
+        description: '这个月项目赶工，你拿到了一大笔加班费。',
+        effect: 'cash_bonus', amount: 3000,
+        tip: '加班费是用时间换来的额外收入。值得高兴，但更值得思考：如何让钱为你工作？'
+    },
+    {
+        id: 'headhunter_call',
+        title: '猎头电话',
+        description: '猎头打来电话，对方公司开出高于目前30%的薪资。但需要搬到另一个城市。',
+        effect: 'job_offer', salaryMultiplier: 1.3, movingCost: 5000, optional: true,
+        tip: '高薪诱惑要全面考虑：搬迁成本、生活成本、社交网络、已有资产管理等。'
+    },
+    {
+        id: 'promotion',
+        title: '晋升机会',
+        description: '你有机会晋升为管理层，工资涨20%，但要付出更多时间和精力。',
+        effect: 'salary_change', multiplier: 1.2,
+        satisfactionDelta: -5,
+        tip: '晋升意味着更高的E象限收入，但也意味着更少的时间用于发展被动收入。'
+    },
+    {
+        id: 'side_income',
+        title: '兼职收入',
+        description: '你利用业余时间接了一个私活，获得了一笔额外收入。',
+        effect: 'cash_bonus', amount: 2000,
+        tip: '兼职是S象限的起点。但记住：兼职收入还是在用时间换钱。'
+    },
+    {
+        id: 'training_opportunity',
+        title: '公司培训',
+        description: '公司提供免费培训机会，学完后有机会获得更好的职位。',
+        effect: 'skill_up',
+        tip: '持续学习是职场竞争力的保障。利用公司资源提升自己，一举多得。'
+    }
+];
+
+/**
+ * V6: 意外之财事件
+ */
+const WINDFALL_EVENTS = [
+    {
+        id: 'lottery_small',
+        title: '彩票小奖',
+        description: '你买的彩票中了一个小奖！虽然不多，但也是意外之喜。',
+        amount: 2000,
+        tip: '小概率事件不能作为理财策略。偶尔中奖开心就好，不要沉迷。'
+    },
+    {
+        id: 'inheritance',
+        title: '遗产继承',
+        description: '一位远房亲戚去世，留给你一笔小遗产。',
+        amount: 10000,
+        tip: '意外之财最容易被挥霍。把它投入资产，让它持续为你工作。'
+    },
+    {
+        id: 'tax_refund',
+        title: '退税',
+        description: '年度税务核算后，你获得了一笔退税。',
+        amount: 3000,
+        tip: '退税是你之前多交的钱。合理的税务规划可以让你更早拿到这笔钱用于投资。'
+    },
+    {
+        id: 'found_money',
+        title: '找到被遗忘的存款',
+        description: '整理旧物时发现了一张很久以前的定期存款单，已经到期可以取出。',
+        amount: 5000,
+        tip: '这是过去的你送给现在的你的礼物。把它投入到能产生被动收入的资产中去。'
+    },
+    {
+        id: 'bonus_unexpected',
+        title: '意外奖金',
+        description: '公司年底业绩超额完成，发放了一笔额外的绩效奖金。',
+        amount: 4000,
+        tip: '奖金是"先付自己"的好机会。至少把一半用于投资或存入应急基金。'
+    },
+    {
+        id: 'refund_received',
+        title: '退款到账',
+        description: '之前一笔纠纷终于解决了，对方赔偿了你的损失。',
+        amount: 3000,
+        tip: '维权也是一种"资产保护"行为。了解自己的权利，该争取就争取。'
+    },
+    {
+        id: 'stock_dividend_special',
+        title: '特别分红',
+        description: '你之前投资的一家公司宣布特别分红，比平时多了很多！',
+        amount: 6000,
+        tip: '特别分红通常发生在公司业绩特别好的年份。选择优质公司长期持有是获取此类回报的关键。'
+    },
+    {
+        id: 'friend_repay',
+        title: '朋友还钱',
+        description: '一个朋友终于还了你很久以前借给他的钱，你都快忘了这回事。',
+        amount: 2000,
+        tip: '借钱给朋友要谨慎。能要回来是幸运，要不回来是常态。'
+    }
+];
+
+/**
+ * V6: 新增更多资产互动事件
+ */
+const EXTRA_INTERACTION_EVENTS = [
+    {
+        id: 'merge_businesses',
+        requireAssetType: 'business',
+        requireAssetCount: 3,
+        title: '生意整合机会',
+        description: '你拥有多个生意，有人建议你整合成一个品牌运营。花¥20,000重组，总收入可以提升40%。',
+        choices: [
+            { label: '整合重组 (-¥20,000)', effect: 'upgrade_all_income', cost: 20000, multiplier: 1.4,
+              tip: '品牌化运营是B象限的高阶操作' },
+            { label: '各自独立运营', effect: 'none',
+              tip: '分散也有分散的好处' }
+        ],
+        tip: '规模化、品牌化是从小生意到大企业的关键一步。'
+    },
+    {
+        id: 'portfolio_rebalance',
+        requireAssetType: 'fund',
+        requireAssetCount: 2,
+        title: '投资组合再平衡',
+        description: '理财顾问建议你重新调整基金配置。花¥3,000咨询费，但预计收益提升15%。',
+        choices: [
+            { label: '接受建议 (-¥3,000)', effect: 'upgrade_all_income', cost: 3000, multiplier: 1.15,
+              tip: '专业的事交给专业的人' },
+            { label: '自己管理', effect: 'none',
+              tip: '省下顾问费' }
+        ],
+        tip: '定期再平衡是专业投资者的基本操作。'
+    },
+    {
+        id: 'tenant_long_term',
+        requireAssetType: 'realestate',
+        requireAssetCount: 1,
+        title: '租客续约谈判',
+        description: '你的长期租客合约到期。他愿意签3年长约但要求降5%租金。不签的话可能空置1-2月。',
+        choices: [
+            { label: '签长约(租金-5%)', effect: 'reduce_income', multiplier: 0.95, satisfactionDelta: 5,
+              tip: '稳定比最大化更重要' },
+            { label: '不签，寻找新租客', effect: 'risk_vacancy', vacancyMonths: 2, chanceOfLeaving: 0.7,
+              tip: '可能找到出价更高的租客' }
+        ],
+        tip: '长期稳定租客的价值往往大于那5%的租金差。'
+    },
+    {
+        id: 'cross_sell',
+        requireAssetType: 'business',
+        requireAssetCount: 2,
+        title: '交叉销售机会',
+        description: '你发现两个生意的客户群有重叠，可以互相导流。预计收入各增10%。',
+        choices: [
+            { label: '推行交叉销售', effect: 'upgrade_all_income', cost: 0, multiplier: 1.1,
+              tip: '协同效应是多元化经营的回报' },
+            { label: '暂时不需要', effect: 'none',
+              tip: '保持简单' }
+        ],
+        tip: '拥有多个生意的最大好处就是协同效应——1+1>2。'
     }
 ];
 
 /**
  * 抽取一张随机事件卡
- * V3: 支持满意度影响、象限过滤、财商教育、已答题过滤
+ * V6: 支持满意度影响、象限过滤、财商教育、已答题过滤、贷款事件、职业事件、意外之财
  */
 function drawCard(player) {
     // 检查FOMO队列
@@ -893,9 +1754,34 @@ function drawCard(player) {
         };
     }
 
-    // V5: 10%概率触发资产互动事件（需持有足够资产）
-    if (Math.random() < 0.10 && player.month >= 13) {
-        const applicable = ASSET_INTERACTION_EVENTS.filter(evt => {
+    // V6: 8%概率触发贷款事件（需有贷款）
+    if (player.loans && player.loans.length > 0 && Math.random() < 0.08) {
+        const applicable = LOAN_EVENTS.filter(evt => {
+            if (evt.triggerCondition === 'low_cash' && player.cash > 5000) return false;
+            return true;
+        });
+        if (applicable.length > 0) {
+            const card = applicable[Math.floor(Math.random() * applicable.length)];
+            return { type: 'loan', card };
+        }
+    }
+
+    // V6: 7%概率触发职业事件
+    if (Math.random() < 0.07) {
+        const card = CAREER_EVENTS[Math.floor(Math.random() * CAREER_EVENTS.length)];
+        return { type: 'career', card };
+    }
+
+    // V6: 5%概率触发意外之财
+    if (Math.random() < 0.05) {
+        const card = WINDFALL_EVENTS[Math.floor(Math.random() * WINDFALL_EVENTS.length)];
+        return { type: 'windfall', card };
+    }
+
+    // V5+V6: 12%概率触发资产互动事件（需持有足够资产）
+    if (Math.random() < 0.12 && player.month >= 13) {
+        const allInteractions = [...ASSET_INTERACTION_EVENTS, ...EXTRA_INTERACTION_EVENTS];
+        const applicable = allInteractions.filter(evt => {
             const count = player.assets.filter(a => a.type === evt.requireAssetType).length;
             return count >= evt.requireAssetCount;
         });

@@ -97,7 +97,12 @@ body {
 /* === 职业选择 === */
 .career-container { margin: auto; padding: 40px; max-width: 900px; width: 100%; }
 .career-container h2 { text-align: center; font-size: 28px; margin-bottom: 8px; }
-.career-hint { text-align: center; color: var(--color-text-dim); margin-bottom: 32px; }
+.career-hint { text-align: center; color: var(--color-text-dim); margin-bottom: 16px; }
+.duration-selector { text-align: center; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.duration-label { color: var(--color-text-dim); font-size: 14px; }
+.btn-duration { padding: 6px 16px; border-radius: var(--radius); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-dim); cursor: pointer; transition: all 0.2s; font-size: 13px; }
+.btn-duration:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.btn-duration.active { background: var(--color-primary-dark); border-color: var(--color-primary); color: #fff; }
 .career-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
 .career-card {
     background: var(--color-surface); border: 2px solid var(--color-border);
