@@ -1,17 +1,25 @@
-# Game2048
-This repository contains a simple command-line implementation of the popular 2048 puzzle game using Python. 
-The project is split into two files:
+# 现金流 - 财务自由之路
 
-main.py – The main entry point that runs the game.
-game2048.py – Contains all core logic functions (board initialization, movement, merging, checking for win/lose conditions, etc.).
-How It Works
-The game board is a 4×4 grid, initialized with two random cells containing the number 2.
-Players can move tiles by pressing W, A, S, or D to move up, left, down, or right, respectively.
-When two tiles with the same value collide, they merge into a tile with the combined value.
-After every move, a new random tile (with value 2) appears in an empty spot.
-If you reach 2048 in any cell, you win. If there are no available moves, the game ends.
-Project Requirements and Features
-Exception Handling: Handles invalid inputs (e.g., invalid keys).
-Two-File Structure: A main file for running the game, and a separate file containing all the functions.
+基于《富爸爸穷爸爸》核心理念的回合制财商教育游戏。
 
-Enjoy the game！
+## 游戏目标
+
+让你的**被动收入**超过**总支出**，实现财务自由，逃出老鼠赛跑圈！
+
+## 核心概念
+
+- **资产**：把钱放进你口袋的东西（出租房产、股票分红、生意利润）
+- **负债**：把钱从你口袋拿走的东西（房贷、车贷、信用卡）
+- **财务自由** = 被动收入 ≥ 总支出
+
+## 如何运行
+
+直接用浏览器打开 `index.html` 即可开始游戏，无需安装任何依赖。
+
+## 玩法
+
+1. 选择职业开局（不同难度）
+2. 每回合代表一个月：领工资 → 收被动收入 → 扣支出 → 抽事件卡 → 做决策
+3. 通过投资积累资产，增加被动收入
+4. 避免不必要的消费和负债
+5. 当被动收入 ≥ 总支出时，恭喜你实现了财务自由！

@@ -1,0 +1,438 @@
+/* === 基础重置与变量 === */
+:root {
+    --color-bg: #0f1923;
+    --color-surface: #1a2732;
+    --color-surface-alt: #213341;
+    --color-border: #2d4a5c;
+    --color-text: #e8edf2;
+    --color-text-dim: #8a9bb0;
+    --color-primary: #4fc3f7;
+    --color-primary-dark: #0288d1;
+    --color-income: #66bb6a;
+    --color-expense: #ef5350;
+    --color-asset: #42a5f5;
+    --color-liability: #ff7043;
+    --color-gold: #ffd54f;
+    --color-positive: #66bb6a;
+    --color-negative: #ef5350;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* === 屏幕管理 === */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* === 按钮 === */
+.btn {
+    padding: 10px 24px; border: none; border-radius: var(--radius);
+    font-size: 16px; cursor: pointer; transition: all 0.2s; font-weight: 500;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: var(--color-primary); color: var(--color-bg); }
+.btn-primary:hover { background: var(--color-primary-dark); color: #fff; }
+.btn-secondary { background: var(--color-surface-alt); color: var(--color-text); border: 1px solid var(--color-border); }
+.btn-secondary:hover { background: var(--color-border); }
+.btn-success { background: var(--color-positive); color: #fff; }
+.btn-success:hover { filter: brightness(0.9); }
+.btn-danger { background: var(--color-negative); color: #fff; }
+.btn-danger:hover { filter: brightness(0.9); }
+.btn-text { background: none; color: var(--color-text-dim); padding: 8px 16px; }
+.btn-text:hover { color: var(--color-text); }
+.btn-small { padding: 6px 14px; font-size: 13px; background: var(--color-surface-alt); color: var(--color-text-dim); border: 1px solid var(--color-border); }
+.btn-small:hover { background: var(--color-border); color: var(--color-text); }
+.btn-large { padding: 14px 36px; font-size: 18px; width: 100%; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* 内联小按钮（卖出/还贷） */
+.btn-inline {
+    display: inline-block; padding: 1px 6px; font-size: 11px;
+    border: 1px solid var(--color-border); border-radius: 4px;
+    background: var(--color-surface-alt); color: var(--color-text-dim);
+    cursor: pointer; margin-left: 6px; vertical-align: middle;
+    transition: all 0.15s;
+}
+.btn-sell:hover { border-color: var(--color-income); color: var(--color-income); }
+.btn-repay:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* === 主菜单 === */
+.menu-container { margin: auto; text-align: center; padding: 40px; }
+.game-title {
+    font-size: 64px; font-weight: 800;
+    background: linear-gradient(135deg, var(--color-gold), var(--color-primary));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 8px;
+}
+.game-subtitle { font-size: 22px; color: var(--color-text-dim); margin-bottom: 24px; }
+.game-desc { font-size: 15px; color: var(--color-text-dim); line-height: 1.8; margin-bottom: 40px; }
+.menu-buttons { display: flex; flex-direction: column; gap: 12px; max-width: 280px; margin: 0 auto 24px; }
+.menu-buttons .btn { width: 100%; }
+
+/* === 存档槽 === */
+.save-slots { max-width: 400px; margin: 0 auto; text-align: left; }
+.save-slot {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: background 0.2s;
+}
+.save-slot:hover { background: var(--color-surface-alt); }
+.save-slot-info h4 { font-size: 14px; margin-bottom: 2px; }
+.save-slot-info p { font-size: 12px; color: var(--color-text-dim); }
+.save-slot-actions { display: flex; gap: 6px; }
+.save-slot-actions .btn-small { font-size: 12px; padding: 4px 10px; }
+.hidden { display: none !important; }
+
+/* === 职业选择 === */
+.career-container { margin: auto; padding: 40px; max-width: 900px; width: 100%; }
+.career-container h2 { text-align: center; font-size: 28px; margin-bottom: 8px; }
+.career-hint { text-align: center; color: var(--color-text-dim); margin-bottom: 32px; }
+.career-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.career-card {
+    background: var(--color-surface); border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg); padding: 24px; cursor: pointer;
+    transition: all 0.2s; text-align: center;
+}
+.career-card:hover { border-color: var(--color-primary); transform: translateY(-2px); box-shadow: var(--shadow); }
+.career-icon { font-size: 48px; margin-bottom: 12px; display: block; }
+.career-card h3 { font-size: 20px; margin-bottom: 8px; }
+.career-card .career-salary { color: var(--color-income); font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+.career-card .career-detail { font-size: 13px; color: var(--color-text-dim); line-height: 1.6; }
+.career-card .career-difficulty { margin-top: 12px; font-size: 13px; color: var(--color-gold); }
+#btn-back-menu { display: block; margin: 0 auto; }
+
+/* === 游戏说明 & 统计 & 成就 === */
+.tutorial-container { margin: auto; padding: 40px; max-width: 700px; width: 100%; }
+.tutorial-container h2 { text-align: center; font-size: 28px; margin-bottom: 24px; }
+.tutorial-content { margin-bottom: 32px; }
+.tutorial-section { background: var(--color-surface); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+.tutorial-section h3 { color: var(--color-primary); margin-bottom: 8px; font-size: 16px; }
+.tutorial-section p { font-size: 14px; line-height: 1.7; color: var(--color-text-dim); }
+.tutorial-section strong { color: var(--color-text); }
+.formula { text-align: center; font-size: 16px !important; color: var(--color-gold) !important; font-weight: 600; padding: 8px 0; }
+#btn-back-from-tutorial { display: block; margin: 0 auto; }
+
+/* 统计网格 */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stats-grid .stat-item { background: var(--color-surface); border-radius: var(--radius); padding: 16px; text-align: center; }
+.stats-grid .stat-label { font-size: 13px; color: var(--color-text-dim); margin-bottom: 4px; }
+.stats-grid .stat-value { font-size: 20px; font-weight: 700; }
+
+/* 成就列表 */
+.achievements-content { display: flex; flex-direction: column; gap: 10px; }
+.achievement-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; border-radius: var(--radius);
+    background: var(--color-surface); border: 1px solid var(--color-border);
+}
+.achievement-card.locked { opacity: 0.5; }
+.achievement-card.unlocked { border-color: var(--color-gold); }
+.achievement-icon { font-size: 28px; flex-shrink: 0; }
+.achievement-name { font-size: 15px; font-weight: 600; }
+.achievement-desc { font-size: 13px; color: var(--color-text-dim); }
+
+/* === 主游戏界面 === */
+#screen-game { flex-direction: column; height: 100vh; }
+.game-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px; background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border); flex-shrink: 0;
+}
+.header-left, .header-right { display: flex; align-items: center; gap: 16px; }
+.month-display { font-size: 16px; font-weight: 600; color: var(--color-gold); }
+.career-display { font-size: 14px; color: var(--color-text-dim); }
+.cash-display { font-size: 16px; font-weight: 600; color: var(--color-income); }
+
+/* 倒计时 */
+.countdown-display { font-size: 13px; color: var(--color-text-dim); padding: 2px 8px; border-radius: 4px; background: var(--color-surface-alt); }
+.countdown-urgent { color: var(--color-negative); font-weight: 700; animation: urgentPulse 1s ease-in-out infinite; }
+@keyframes urgentPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.game-body { display: flex; flex: 1; overflow: hidden; }
+
+/* === 面板 === */
+.panel { padding: 16px; overflow-y: auto; }
+.panel-finance {
+    width: 380px; min-width: 380px;
+    border-right: 1px solid var(--color-border); background: var(--color-surface);
+}
+.panel-finance h3 { font-size: 16px; margin-bottom: 12px; color: var(--color-text-dim); }
+.panel-event { flex: 1; display: flex; flex-direction: column; padding: 16px 24px; }
+
+/* === 财务报表 === */
+.finance-section { margin-bottom: 12px; }
+.section-header {
+    display: flex; justify-content: space-between;
+    padding: 8px 12px; border-radius: var(--radius);
+    font-size: 14px; font-weight: 600; margin-bottom: 4px;
+}
+.income-header { background: rgba(102,187,106,0.15); color: var(--color-income); }
+.expense-header { background: rgba(239,83,80,0.15); color: var(--color-expense); }
+.asset-header { background: rgba(66,165,245,0.15); color: var(--color-asset); }
+.liability-header { background: rgba(255,112,67,0.15); color: var(--color-liability); }
+.section-total { font-weight: 700; }
+.finance-list { padding: 0 4px; }
+.finance-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 8px; font-size: 13px; color: var(--color-text-dim);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.finance-item:last-child { border-bottom: none; }
+.finance-item-action:hover { background: rgba(255,255,255,0.03); border-radius: 4px; }
+
+.cashflow-summary {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; background: var(--color-surface-alt);
+    border-radius: var(--radius); margin-bottom: 12px; font-weight: 700; font-size: 15px;
+}
+.cashflow-value { font-size: 18px; }
+.cashflow-positive { color: var(--color-positive); }
+.cashflow-negative { color: var(--color-negative); }
+
+/* === 财务自由进度 === */
+.freedom-progress { background: var(--color-surface-alt); border-radius: var(--radius); padding: 12px; margin-top: 8px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: var(--color-gold); font-weight: 600; }
+.progress-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-gold)); border-radius: 4px; transition: width 0.5s ease; width: 0%; }
+.progress-detail { font-size: 12px; color: var(--color-text-dim); text-align: center; }
+
+/* === 事件区域 === */
+.event-area { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 200px; }
+.event-placeholder { text-align: center; color: var(--color-text-dim); font-size: 16px; }
+.action-bar { padding: 12px 0; flex-shrink: 0; }
+
+/* === 消息日志 === */
+.message-log {
+    flex-shrink: 0; max-height: 180px; overflow-y: auto;
+    background: var(--color-surface); border-radius: var(--radius); padding: 12px;
+}
+.message-log h4 { font-size: 13px; color: var(--color-text-dim); margin-bottom: 8px; }
+.message-list { font-size: 13px; }
+.message-item { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--color-text-dim); line-height: 1.5; }
+.message-item:last-child { border-bottom: none; }
+.msg-income { color: var(--color-income); }
+.msg-expense { color: var(--color-expense); }
+.msg-info { color: var(--color-primary); }
+.msg-warning { color: var(--color-gold); }
+
+/* === 模态弹窗 === */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); display: flex; align-items: center;
+    justify-content: center; z-index: 100; padding: 20px;
+}
+.modal-card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); padding: 32px; max-width: 500px; width: 100%;
+    position: relative; box-shadow: var(--shadow); animation: modalIn 0.3s ease;
+    max-height: 90vh; overflow-y: auto;
+}
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-type-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; margin-bottom: 12px;
+}
+.badge-opportunity { background: rgba(102,187,106,0.2); color: var(--color-income); }
+.badge-expense { background: rgba(239,83,80,0.2); color: var(--color-expense); }
+.badge-market { background: rgba(66,165,245,0.2); color: var(--color-asset); }
+.badge-learning { background: rgba(255,213,79,0.2); color: var(--color-gold); }
+.card-title { font-size: 22px; margin-bottom: 12px; }
+.card-description { font-size: 14px; color: var(--color-text-dim); line-height: 1.7; margin-bottom: 16px; }
+.card-details { background: var(--color-bg); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; line-height: 1.8; }
+.detail-row { display: flex; justify-content: space-between; }
+.detail-label { color: var(--color-text-dim); }
+.detail-value { font-weight: 600; }
+.card-tip {
+    font-size: 13px; color: var(--color-gold);
+    background: rgba(255,213,79,0.1); border-radius: var(--radius);
+    padding: 10px 14px; margin-bottom: 16px; line-height: 1.6;
+}
+.card-tip:empty { display: none; }
+.card-actions { display: flex; gap: 10px; }
+.card-actions .btn { flex: 1; }
+
+/* === 游戏结束 === */
+.modal-gameover { text-align: center; max-width: 550px; }
+.modal-gameover h2 { font-size: 32px; margin-bottom: 12px; }
+.modal-gameover p { color: var(--color-text-dim); margin-bottom: 20px; line-height: 1.6; }
+.gameover-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.stat-item { background: var(--color-bg); border-radius: var(--radius); padding: 12px; }
+.stat-label { font-size: 12px; color: var(--color-text-dim); }
+.stat-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+/* 结算分析报告 */
+.gameover-analysis { text-align: left; margin-bottom: 20px; }
+.report-section { margin-bottom: 12px; }
+.report-section h4 { font-size: 14px; margin-bottom: 6px; }
+.report-item { font-size: 13px; color: var(--color-text-dim); padding: 3px 0; line-height: 1.5; }
+.report-grade { text-align: center; margin-top: 16px; padding: 16px; background: var(--color-bg); border-radius: var(--radius); }
+.grade-letter { font-size: 48px; font-weight: 800; }
+.grade-msg { font-size: 14px; color: var(--color-text-dim); margin-top: 8px; }
+
+/* === Toast通知 === */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+    padding: 12px 20px; background: var(--color-surface); border: 1px solid var(--color-gold);
+    border-radius: var(--radius); color: var(--color-gold); font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow); opacity: 0; transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+.toast-show { opacity: 1; transform: translateX(0); }
+
+/* ===================================================================
+   V3 新增样式
+   =================================================================== */
+
+/* === 头部V3扩展 === */
+.header-center { display: flex; align-items: center; gap: 10px; }
+.header-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    background: var(--color-surface-alt); color: var(--color-text-dim);
+    border: 1px solid var(--color-border);
+}
+.iq-badge { color: var(--color-gold); border-color: rgba(255,213,79,0.3); }
+.prot-badge { color: var(--color-primary); border-color: rgba(79,195,247,0.3); }
+
+/* 象限指示器 */
+.quadrant-indicator { display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; }
+.quad-step {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%; font-size: 11px;
+    background: var(--color-surface-alt); color: var(--color-text-dim);
+    border: 1px solid var(--color-border);
+}
+.quad-current { background: var(--color-gold); color: var(--color-bg); border-color: var(--color-gold); }
+.quad-done { background: var(--color-positive); color: #fff; border-color: var(--color-positive); }
+.quad-future { opacity: 0.4; }
+.quad-arrow { color: var(--color-text-dim); font-size: 10px; margin: 0 1px; }
+
+/* 满意度 */
+.satisfaction-display { display: flex; align-items: center; gap: 4px; }
+.sat-icon { font-size: 18px; }
+.sat-value { font-size: 13px; font-weight: 700; }
+.sat-good { color: var(--color-positive); }
+.sat-medium { color: var(--color-gold); }
+.sat-low { color: var(--color-liability); }
+.sat-crisis { color: var(--color-negative); }
+
+/* 投资准备金 */
+.reserve-display {
+    font-size: 12px; color: var(--color-gold);
+    padding: 2px 8px; border-radius: 4px;
+    background: rgba(255,213,79,0.1); border: 1px solid rgba(255,213,79,0.2);
+}
+
+/* 先付自己按钮 */
+.btn-payself {
+    background: rgba(255,213,79,0.15); border-color: rgba(255,213,79,0.3);
+    color: var(--color-gold); font-size: 12px; cursor: pointer;
+}
+.btn-payself:hover { background: rgba(255,213,79,0.25); }
+
+/* === 现金流模式图（系统一） === */
+.cashflow-diagram {
+    background: var(--color-bg); border-radius: var(--radius);
+    padding: 12px; margin-bottom: 12px; text-align: center;
+}
+.flow-label { font-size: 12px; color: var(--color-text-dim); margin-bottom: 8px; }
+.flow-visual { min-height: 50px; }
+
+.flow-diagram { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; padding: 8px 0; }
+.flow-box {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--color-border); white-space: nowrap;
+}
+.flow-salary { background: rgba(102,187,106,0.15); color: var(--color-income); border-color: var(--color-income); }
+.flow-expense { background: rgba(239,83,80,0.15); color: var(--color-expense); border-color: var(--color-expense); }
+.flow-liability { background: rgba(255,112,67,0.15); color: var(--color-liability); border-color: var(--color-liability); }
+.flow-asset { background: rgba(66,165,245,0.15); color: var(--color-asset); border-color: var(--color-asset); }
+.flow-passive { background: rgba(255,213,79,0.15); color: var(--color-gold); border-color: var(--color-gold); }
+.flow-faded { opacity: 0.3; }
+
+.flow-arrow { font-size: 12px; color: var(--color-text-dim); }
+.flow-arrow-poor { color: var(--color-expense); }
+.flow-arrow-middle { color: var(--color-liability); }
+.flow-arrow-rich { color: var(--color-income); }
+
+.flow-desc { width: 100%; font-size: 11px; color: var(--color-text-dim); margin-top: 6px; }
+
+.flow-reinvest {
+    width: 100%; text-align: center; margin-top: -2px;
+}
+.reinvest-arrow {
+    display: inline-block; font-size: 11px; color: var(--color-gold);
+    animation: reinvestPulse 2s ease-in-out infinite;
+}
+@keyframes reinvestPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+.flow-type {
+    font-size: 13px; font-weight: 700; margin-top: 6px; padding: 2px 10px;
+    border-radius: 4px; display: inline-block;
+}
+.flow-type-poor { background: rgba(138,155,176,0.2); color: var(--color-text-dim); }
+.flow-type-middle { background: rgba(255,112,67,0.2); color: var(--color-liability); }
+.flow-type-rich { background: rgba(255,213,79,0.2); color: var(--color-gold); }
+
+/* === 税务显示行（系统四） === */
+.finance-tax-line {
+    font-size: 11px !important;
+    padding-left: 16px !important;
+    opacity: 0.7;
+}
+
+/* === 协同加成行（系统八） === */
+.synergy-line {
+    background: rgba(255,213,79,0.05);
+    border-left: 2px solid var(--color-gold);
+    padding-left: 10px !important;
+}
+
+/* === 累计收益子行（系统六） === */
+.finance-sub-line {
+    font-size: 11px !important;
+    padding-left: 16px !important;
+    color: var(--color-text-dim) !important;
+    opacity: 0.7;
+}
+
+/* === 低满意度氛围（系统三） === */
+.low-satisfaction .panel-finance { border-right-color: rgba(239,83,80,0.3); }
+.low-satisfaction .game-header { border-bottom-color: rgba(239,83,80,0.3); }
+.crisis-satisfaction { animation: crisisPulse 3s ease-in-out infinite; }
+@keyframes crisisPulse {
+    0%, 100% { background-color: var(--color-bg); }
+    50% { background-color: rgba(239,83,80,0.05); }
+}
+
+/* === 响应式 === */
+@media (max-width: 800px) {
+    .game-body { flex-direction: column; }
+    .panel-finance { width: 100%; min-width: unset; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--color-border); }
+    .career-list { grid-template-columns: 1fr; }
+    .game-title { font-size: 42px; }
+    .header-left, .header-right { gap: 8px; }
+    .header-center { display: none; }
+    .career-display { display: none; }
+    .modal-card { padding: 20px; margin: 10px; }
+    .stats-grid { grid-template-columns: 1fr; }
+    .reserve-display { display: none; }
+    .quadrant-indicator .quad-arrow { display: none; }
+    .cashflow-diagram { padding: 8px; }
+    .flow-box { font-size: 10px; padding: 3px 6px; }
+    .gameover-stats { grid-template-columns: 1fr 1fr; }
+}
