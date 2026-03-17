@@ -1,7 +1,8 @@
 /**
- * 事件卡系统 V2
- * 类型: opportunity(投资机会), expense(额外支出), market(市场波动), learning(学习)
- * 新增: unlockMonth(阶段解锁), 连锁事件系统
+ * 事件卡系统 V3
+ * 类型: opportunity(投资机会), expense(额外支出), market(市场波动), learning(学习),
+ *       chain(连锁事件), education(财商教育), fomo(FOMO事件), social(社交攀比),
+ *       protection(资产保护), risk(风险事件)
  */
 
 const CARD_TYPES = {
@@ -9,7 +10,14 @@ const CARD_TYPES = {
     expense: { label: '额外支出', badgeClass: 'badge-expense' },
     market: { label: '市场波动', badgeClass: 'badge-market' },
     learning: { label: '财商学堂', badgeClass: 'badge-learning' },
-    chain: { label: '连锁事件', badgeClass: 'badge-market' }
+    chain: { label: '连锁事件', badgeClass: 'badge-market' },
+    education: { label: '财商教育', badgeClass: 'badge-learning' },
+    fomo: { label: 'FOMO事件', badgeClass: 'badge-expense' },
+    social: { label: '社交攀比', badgeClass: 'badge-expense' },
+    protection: { label: '资产保护', badgeClass: 'badge-opportunity' },
+    risk: { label: '风险事件', badgeClass: 'badge-expense' },
+    satisfaction: { label: '生活事件', badgeClass: 'badge-market' },
+    quadrant: { label: '象限进化', badgeClass: 'badge-opportunity' }
 };
 
 const CARDS = {
@@ -207,6 +215,70 @@ const CARDS = {
             asset: { name: '品牌加盟店', type: 'business', cost: 150000, income: 1800 },
             tip: '成熟品牌的加盟权本身就是一种资产。净现金流 = ¥1800 - ¥800 = ¥1000/月。',
             unlockMonth: 37
+        },
+
+        // === S象限专属卡 ===
+        {
+            id: 'personal_studio',
+            title: '个人工作室',
+            description: '你可以成立自己的工作室，接更多项目，但需要一笔启动资金。',
+            cost: 20000, downPayment: 20000, monthlyIncome: 300,
+            asset: { name: '个人工作室', type: 'business', cost: 20000, income: 300 },
+            tip: 'S象限的起点：用你的技能赚钱。但记住，你还是在用时间换钱。',
+            unlockMonth: 1, requireQuadrant: 'S'
+        },
+        {
+            id: 'freelance_project',
+            title: '外包项目',
+            description: '一个大客户需要你做一个长期外包项目，每月有稳定收入。',
+            cost: 5000, downPayment: 5000, monthlyIncome: 250,
+            asset: { name: '外包合同', type: 'business', cost: 5000, income: 250 },
+            tip: '外包收入是S象限的典型收入方式。稳定但有上限。',
+            unlockMonth: 1, requireQuadrant: 'S'
+        },
+
+        // === B象限专属卡 ===
+        {
+            id: 'hire_team',
+            title: '招聘管理团队',
+            description: '你的生意需要扩张，招聘一个管理团队让业务系统化运作。投入后收入大幅提升。',
+            cost: 50000, downPayment: 50000, monthlyIncome: 800,
+            asset: { name: '管理团队', type: 'business', cost: 50000, income: 800 },
+            tip: 'B象限的核心：建立系统。你不再为钱工作，系统为你赚钱。',
+            unlockMonth: 1, requireQuadrant: 'B'
+        },
+        {
+            id: 'open_branch',
+            title: '开设分店',
+            description: '你的品牌已经成熟，可以在另一个区域开设分店。',
+            cost: 80000, downPayment: 30000, monthlyIncome: 1000,
+            liability: { name: '分店贷款', total: 50000, monthly: 500 },
+            expense: { name: '分店贷月供', amount: 500 },
+            asset: { name: '品牌分店', type: 'business', cost: 80000, income: 1000 },
+            tip: '规模化是B象限的核心策略。每开一家分店，你的系统就更强大。',
+            unlockMonth: 1, requireQuadrant: 'B'
+        },
+
+        // === I象限专属卡 ===
+        {
+            id: 'angel_invest',
+            title: '天使投资',
+            description: '一个初创团队向你融资，项目前景不错。作为天使投资人，你可以获得股权分红。',
+            cost: 100000, downPayment: 100000, monthlyIncome: 1500,
+            asset: { name: '天使投资', type: 'stock', cost: 100000, income: 1500 },
+            tip: 'I象限的高阶玩法：用钱投资别人的梦想，获取股权回报。',
+            unlockMonth: 1, requireQuadrant: 'I'
+        },
+        {
+            id: 'business_acquisition',
+            title: '企业并购',
+            description: '一家盈利稳定的小企业正在出售。收购后你可以整合到你的商业版图中。',
+            cost: 200000, downPayment: 80000, monthlyIncome: 3000,
+            liability: { name: '并购贷款', total: 120000, monthly: 1500 },
+            expense: { name: '并购贷月供', amount: 1500 },
+            asset: { name: '收购企业', type: 'business', cost: 200000, income: 3000 },
+            tip: '企业并购是I象限投资者的利器。用钱买别人已经建好的系统。',
+            unlockMonth: 1, requireQuadrant: 'I'
         }
     ],
 
@@ -261,7 +333,6 @@ const CARDS = {
             amount: 2500,
             tip: '税务规划是财务管理的重要一环。了解合法节税方法可以节省不少钱。'
         },
-        // === 新增 8 张 ===
         {
             id: 'child_tuition', title: '孩子学费',
             description: '新学期开始了，孩子的学费和各种辅导班费用需要缴纳。',
@@ -313,6 +384,24 @@ const CARDS = {
             addExpense: { name: '信用卡分期', amount: 800 },
             addLiability: { name: '信用卡分期', total: 14400, monthly: 800 },
             tip: '信用卡分期是最常见的负债陷阱。看似每月只还¥800，但总共要还¥14400——多付了44%的利息！'
+        },
+        // === V3: 报复性消费（满意度低时触发） ===
+        {
+            id: 'revenge_spend', title: '报复性消费',
+            description: '你已经很久没有犒劳自己了，压抑的消费欲望突然爆发！你冲动购买了一堆东西。',
+            amount: 3000, isForced: true,
+            satisfactionRestore: 20,
+            tip: '完全压抑消费欲望不可持续。有计划的小奖励好过报复性大消费。',
+            triggerCondition: 'low_satisfaction'
+        },
+        // === V3: 奖励自己（满意度低于50时特殊选项） ===
+        {
+            id: 'treat_yourself', title: '奖励自己',
+            description: '最近压力有点大，给自己买点小东西放松一下？花费不多，但能让你心情好很多。',
+            amount: 800, optional: true,
+            satisfactionRestore: 15,
+            tip: '有计划的小奖励好过报复性大消费。这是"先付自己"中的一种——付给自己的快乐。',
+            triggerCondition: 'medium_satisfaction'
         }
     ],
 
@@ -353,7 +442,6 @@ const CARDS = {
             assetType: 'realestate', incomeMultiplier: 1.2,
             tip: '租金收入增长而月供不变，意味着你的现金流在改善。这就是通胀对债务人的好处。'
         },
-        // === 新增 6 张 ===
         {
             id: 'fund_dividend_up', title: '基金分红增加',
             description: '你持有的基金今年表现优异，分红增加了15%！',
@@ -441,7 +529,6 @@ const CARDS = {
             answer: 1, reward: 1000,
             explanation: '财务自由 = 被动收入 ≥ 总支出。这意味着即使你不工作，你的资产产生的收入也足以覆盖所有开支。'
         },
-        // === 新增 8 张进阶 ===
         {
             id: 'q9', question: '什么是"72法则"？',
             options: ['72岁退休', '用72除以年收益率，得出资产翻倍所需年数', '每月存72%的工资', '投资72种资产'],
@@ -492,6 +579,108 @@ const CARDS = {
         }
     ]
 };
+
+/**
+ * 财商教育机会卡（每15月出现一次）
+ */
+const EDUCATION_CARDS = [
+    {
+        id: 'edu_basic',
+        title: '基础理财课程',
+        description: '一位成功的投资人在你的城市开设基础理财研讨会。学习后你能看到投资卡的更多信息。',
+        cost: 2000, targetLevel: 1,
+        effect: '投资卡额外显示"净现金流"和"回收期"',
+        tip: '信息差是最大的财富差距。花小钱学知识，避免大钱买教训。'
+    },
+    {
+        id: 'edu_advanced',
+        title: '进阶投资分析课',
+        description: '一位知名基金经理开设高级投资分析课程。学习后你能看到投资的风险评级。',
+        cost: 5000, targetLevel: 2,
+        effect: '投资卡额外显示"年化ROI"和"风险评级"',
+        tip: '懂得分析风险，是从新手到高手的分水岭。这¥5000可能帮你避免一个亏损¥10000的投资。'
+    },
+    {
+        id: 'edu_master',
+        title: '大师班：财务自由之路',
+        description: '一位已实现财务自由的投资大师亲自授课。学习后你能看到完整的投资分析和建议。',
+        cost: 10000, targetLevel: 3,
+        effect: '投资卡显示完整分析 + 投资建议（"建议买入"/"慎重考虑"）',
+        tip: '最好的投资是投资自己的大脑。大师级的眼光，让你的每一分钱都花在刀刃上。'
+    }
+];
+
+/**
+ * 资产保护卡
+ */
+const PROTECTION_CARDS = [
+    {
+        id: 'protection_basic',
+        title: '综合保险升级',
+        description: '保险顾问建议你升级为综合保障险，覆盖更多风险场景。',
+        cost: 3000, targetLevel: 1,
+        effect: '意外支出减半',
+        tip: '基础保护是理财的第一步。用小钱转移大风险。'
+    },
+    {
+        id: 'protection_company',
+        title: '成立个人公司',
+        description: '财务顾问建议你成立个人公司持有资产，可以有效隔离个人风险。',
+        cost: 8000, targetLevel: 2,
+        effect: '诉讼/罚款类事件伤害减半',
+        tip: '资产与个人分离是富人的基本操作。个人公司就是一层法律护盾。'
+    },
+    {
+        id: 'protection_trust',
+        title: '家族信托结构',
+        description: '一位资深律师帮你设计家族信托结构，为你的资产提供最高级别的保护。',
+        cost: 15000, targetLevel: 3,
+        effect: '资产价值波动影响减30%',
+        tip: '家族信托是顶级的资产保护工具。赚到第一桶金后，保护它和继续增长一样重要。'
+    }
+];
+
+/**
+ * 风险事件卡（受保护等级影响）
+ */
+const RISK_EVENTS = [
+    {
+        id: 'lawsuit',
+        title: '合伙人纠纷诉讼',
+        description: '你的一个合伙人起诉了你，要求赔偿损失。',
+        effects: {
+            0: { type: 'lose_asset', desc: '失去1个资产' },
+            1: { type: 'lose_asset', desc: '失去1个资产' },
+            2: { type: 'pay_fine', amount: 5000, desc: '赔偿¥5,000' },
+            3: { type: 'pay_fine', amount: 2500, desc: '赔偿¥2,500' }
+        },
+        tip: '法律纠纷是做生意的常见风险。资产保护结构可以大幅降低你的损失。'
+    },
+    {
+        id: 'economic_crisis',
+        title: '经济危机',
+        description: '全球经济陷入衰退，所有资产价值大幅缩水。',
+        effects: {
+            0: { type: 'asset_devalue', multiplier: 0.7, desc: '所有资产贬值30%' },
+            1: { type: 'asset_devalue', multiplier: 0.7, desc: '所有资产贬值30%' },
+            2: { type: 'asset_devalue', multiplier: 0.7, desc: '所有资产贬值30%' },
+            3: { type: 'asset_devalue', multiplier: 0.8, desc: '所有资产贬值20%（信托保护）' }
+        },
+        tip: '经济危机总会来临。持有现金流资产的人受影响最小，因为价格下跌不影响租金收入。'
+    },
+    {
+        id: 'policy_change',
+        title: '政策变动',
+        description: '政府出台新政策，对某类资产进行限制。',
+        effects: {
+            0: { type: 'force_sell', desc: '被迫卖出一个资产' },
+            1: { type: 'force_sell', desc: '被迫卖出一个资产' },
+            2: { type: 'force_sell_no_tax', desc: '被迫卖出但免税' },
+            3: { type: 'choose', desc: '可以选择保留' }
+        },
+        tip: '政策风险是不可控的。分散投资类型可以降低政策变动带来的影响。'
+    }
+];
 
 /**
  * 连锁事件（需要玩家持有特定资产时才会触发）
@@ -554,7 +743,7 @@ const CHAIN_EVENTS = [
     // 基金连锁
     {
         id: 'fund_manager_change', requireAssetType: 'fund',
-        title: '基金经理更换',type: 'chain',
+        title: '基金经理更换', type: 'chain',
         description: '你持有的基金更换了基金经理，市场对此反应不一，基金收益暂时下降10%。',
         effect: 'upgrade_income', cost: 0, incomeMultiplier: 0.9,
         tip: '主动管理型基金受基金经理影响很大。这也是指数基金（被动管理）受欢迎的原因之一。'
@@ -563,10 +752,84 @@ const CHAIN_EVENTS = [
 
 /**
  * 抽取一张随机事件卡
- * V2: 支持阶段解锁和连锁事件
+ * V3: 支持满意度影响、象限过滤、财商教育、已答题过滤
  */
 function drawCard(player) {
-    // 15%概率触发连锁事件（如果有适用的）
+    // 检查FOMO队列
+    if (player.fomoQueue && player.fomoQueue.length > 0) {
+        const fomoIdx = player.fomoQueue.findIndex(f => f.triggerMonth <= player.month);
+        if (fomoIdx !== -1) {
+            const fomo = player.fomoQueue.splice(fomoIdx, 1)[0];
+            return { type: 'fomo', card: fomo.card };
+        }
+    }
+
+    // 检查社交攀比后续事件
+    if (player.pendingSocialFollowup && player.pendingSocialFollowup.triggerMonth <= player.month) {
+        const followup = player.pendingSocialFollowup;
+        player.pendingSocialFollowup = null;
+        return {
+            type: 'social',
+            card: {
+                id: 'social_followup',
+                title: '后续消息',
+                description: `你发现那个同学其实贷款买的，每月还款压力巨大。而你的被动收入又增长了。谁的路更对？`,
+                isFollowup: true,
+                satisfactionRestore: 8,
+                tip: '别人的"光鲜"很可能是负债堆出来的。资产和负债的区别，看的不是外表。'
+            }
+        };
+    }
+
+    // 满意度20-39时报复性消费
+    if (player.satisfaction >= 20 && player.satisfaction < 40 && Math.random() < 0.4) {
+        const amount = 2000 + Math.floor(Math.random() * 3000);
+        return {
+            type: 'expense',
+            card: {
+                ...CARDS.expense.find(c => c.id === 'revenge_spend'),
+                amount: amount
+            }
+        };
+    }
+
+    // 满意度低于50时"奖励自己"选项（20%概率）
+    if (player.satisfaction < 50 && player.satisfaction >= 20 && Math.random() < 0.2) {
+        return {
+            type: 'expense',
+            card: CARDS.expense.find(c => c.id === 'treat_yourself')
+        };
+    }
+
+    // 满意度40-59时"消费诱惑"概率翻倍（通过增加expense概率实现）
+    const consumeBoost = (player.satisfaction >= 40 && player.satisfaction < 60) ? 0.10 : 0;
+
+    // 心态崩溃: 满意度0-19时跳过投资机会
+    const skipOpportunity = player.satisfaction < 20;
+
+    // 社交攀比（每10月一次）
+    if (player.month - player.lastSocialEventMonth >= 10 && Math.random() < 0.3) {
+        player.lastSocialEventMonth = player.month;
+        const socialEvents = [
+            { item: '新车', cost: 3000 },
+            { item: '出国旅游', cost: 3000 },
+            { item: '大房子', cost: 3000 }
+        ];
+        const evt = socialEvents[Math.floor(Math.random() * socialEvents.length)];
+        return {
+            type: 'social',
+            card: {
+                id: 'social_comparison',
+                title: '朋友圈攀比',
+                description: `朋友圈刷屏：你的同学刚买了${evt.item}。你的心里有点不平衡...`,
+                amount: evt.cost,
+                optional: true,
+                tip: '别人的"光鲜"很可能是负债堆出来的。资产和负债的区别，看的不是外表。'
+            }
+        };
+    }
+
+    // 15%概率触发连锁事件
     if (Math.random() < 0.15) {
         const applicable = CHAIN_EVENTS.filter(ce =>
             player.assets.some(a => a.type === ce.requireAssetType)
@@ -577,14 +840,41 @@ function drawCard(player) {
         }
     }
 
-    // 常规抽卡：投资机会35%, 额外支出25%, 市场波动15%, 学习25%
+    // 风险事件（月份30+，5%概率，有资产时触发）
+    if (player.month >= 30 && player.assets.length > 0 && Math.random() < 0.05) {
+        const riskCard = RISK_EVENTS[Math.floor(Math.random() * RISK_EVENTS.length)];
+        return { type: 'risk', card: riskCard };
+    }
+
+    // 财商教育（每15月触发一次检查，有合适课程时触发）
+    if (player.month % 15 === 0 && player.financialIQ < 3) {
+        const nextEdu = EDUCATION_CARDS.find(e => e.targetLevel === player.financialIQ + 1);
+        if (nextEdu) {
+            return { type: 'education', card: nextEdu };
+        }
+    }
+
+    // 资产保护（月份30+，保护等级<3，10%概率）
+    if (player.month >= 30 && player.protectionLevel < 3 && Math.random() < 0.1) {
+        const nextProt = PROTECTION_CARDS.find(p => p.targetLevel === player.protectionLevel + 1);
+        if (nextProt) {
+            return { type: 'protection', card: nextProt };
+        }
+    }
+
+    // 常规抽卡（概率受满意度影响）
     const rand = Math.random();
     let type;
-    if (rand < 0.35) {
+    const oppRate = skipOpportunity ? 0 : 0.35;
+    const expRate = 0.25 + consumeBoost + (skipOpportunity ? 0.15 : 0);
+    const mktRate = 0.15;
+    // learning gets the rest
+
+    if (rand < oppRate) {
         type = 'opportunity';
-    } else if (rand < 0.60) {
+    } else if (rand < oppRate + expRate) {
         type = 'expense';
-    } else if (rand < 0.75) {
+    } else if (rand < oppRate + expRate + mktRate) {
         type = 'market';
     } else {
         type = 'learning';
@@ -592,9 +882,21 @@ function drawCard(player) {
 
     let pool = CARDS[type];
 
-    // 投资机会卡按月份过滤
+    // 投资机会卡按月份和象限过滤
     if (type === 'opportunity') {
-        pool = pool.filter(card => (card.unlockMonth || 1) <= player.month);
+        pool = pool.filter(card => {
+            if ((card.unlockMonth || 1) > player.month) return false;
+            if (card.requireQuadrant && card.requireQuadrant !== player.quadrant) return false;
+            return true;
+        });
+    }
+
+    // 学习卡过滤已答对的题目
+    if (type === 'learning') {
+        const unanswered = pool.filter(card => !player.answeredQuizIds.includes(card.id));
+        if (unanswered.length > 0) {
+            pool = unanswered;
+        }
     }
 
     // 市场波动卡过滤
@@ -613,10 +915,19 @@ function drawCard(player) {
         });
         if (applicable.length === 0) {
             type = 'opportunity';
-            pool = CARDS.opportunity.filter(card => (card.unlockMonth || 1) <= player.month);
+            pool = CARDS.opportunity.filter(card => {
+                if ((card.unlockMonth || 1) > player.month) return false;
+                if (card.requireQuadrant && card.requireQuadrant !== player.quadrant) return false;
+                return true;
+            });
         } else {
             pool = applicable;
         }
+    }
+
+    // 额外支出卡过滤特殊条件卡
+    if (type === 'expense') {
+        pool = pool.filter(card => !card.triggerCondition);
     }
 
     const card = pool[Math.floor(Math.random() * pool.length)];

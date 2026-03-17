@@ -293,6 +293,132 @@ body {
 }
 .toast-show { opacity: 1; transform: translateX(0); }
 
+/* ===================================================================
+   V3 新增样式
+   =================================================================== */
+
+/* === 头部V3扩展 === */
+.header-center { display: flex; align-items: center; gap: 10px; }
+.header-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    background: var(--color-surface-alt); color: var(--color-text-dim);
+    border: 1px solid var(--color-border);
+}
+.iq-badge { color: var(--color-gold); border-color: rgba(255,213,79,0.3); }
+.prot-badge { color: var(--color-primary); border-color: rgba(79,195,247,0.3); }
+
+/* 象限指示器 */
+.quadrant-indicator { display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; }
+.quad-step {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%; font-size: 11px;
+    background: var(--color-surface-alt); color: var(--color-text-dim);
+    border: 1px solid var(--color-border);
+}
+.quad-current { background: var(--color-gold); color: var(--color-bg); border-color: var(--color-gold); }
+.quad-done { background: var(--color-positive); color: #fff; border-color: var(--color-positive); }
+.quad-future { opacity: 0.4; }
+.quad-arrow { color: var(--color-text-dim); font-size: 10px; margin: 0 1px; }
+
+/* 满意度 */
+.satisfaction-display { display: flex; align-items: center; gap: 4px; }
+.sat-icon { font-size: 18px; }
+.sat-value { font-size: 13px; font-weight: 700; }
+.sat-good { color: var(--color-positive); }
+.sat-medium { color: var(--color-gold); }
+.sat-low { color: var(--color-liability); }
+.sat-crisis { color: var(--color-negative); }
+
+/* 投资准备金 */
+.reserve-display {
+    font-size: 12px; color: var(--color-gold);
+    padding: 2px 8px; border-radius: 4px;
+    background: rgba(255,213,79,0.1); border: 1px solid rgba(255,213,79,0.2);
+}
+
+/* 先付自己按钮 */
+.btn-payself {
+    background: rgba(255,213,79,0.15); border-color: rgba(255,213,79,0.3);
+    color: var(--color-gold); font-size: 12px; cursor: pointer;
+}
+.btn-payself:hover { background: rgba(255,213,79,0.25); }
+
+/* === 现金流模式图（系统一） === */
+.cashflow-diagram {
+    background: var(--color-bg); border-radius: var(--radius);
+    padding: 12px; margin-bottom: 12px; text-align: center;
+}
+.flow-label { font-size: 12px; color: var(--color-text-dim); margin-bottom: 8px; }
+.flow-visual { min-height: 50px; }
+
+.flow-diagram { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; padding: 8px 0; }
+.flow-box {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--color-border); white-space: nowrap;
+}
+.flow-salary { background: rgba(102,187,106,0.15); color: var(--color-income); border-color: var(--color-income); }
+.flow-expense { background: rgba(239,83,80,0.15); color: var(--color-expense); border-color: var(--color-expense); }
+.flow-liability { background: rgba(255,112,67,0.15); color: var(--color-liability); border-color: var(--color-liability); }
+.flow-asset { background: rgba(66,165,245,0.15); color: var(--color-asset); border-color: var(--color-asset); }
+.flow-passive { background: rgba(255,213,79,0.15); color: var(--color-gold); border-color: var(--color-gold); }
+.flow-faded { opacity: 0.3; }
+
+.flow-arrow { font-size: 12px; color: var(--color-text-dim); }
+.flow-arrow-poor { color: var(--color-expense); }
+.flow-arrow-middle { color: var(--color-liability); }
+.flow-arrow-rich { color: var(--color-income); }
+
+.flow-desc { width: 100%; font-size: 11px; color: var(--color-text-dim); margin-top: 6px; }
+
+.flow-reinvest {
+    width: 100%; text-align: center; margin-top: -2px;
+}
+.reinvest-arrow {
+    display: inline-block; font-size: 11px; color: var(--color-gold);
+    animation: reinvestPulse 2s ease-in-out infinite;
+}
+@keyframes reinvestPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+.flow-type {
+    font-size: 13px; font-weight: 700; margin-top: 6px; padding: 2px 10px;
+    border-radius: 4px; display: inline-block;
+}
+.flow-type-poor { background: rgba(138,155,176,0.2); color: var(--color-text-dim); }
+.flow-type-middle { background: rgba(255,112,67,0.2); color: var(--color-liability); }
+.flow-type-rich { background: rgba(255,213,79,0.2); color: var(--color-gold); }
+
+/* === 税务显示行（系统四） === */
+.finance-tax-line {
+    font-size: 11px !important;
+    padding-left: 16px !important;
+    opacity: 0.7;
+}
+
+/* === 协同加成行（系统八） === */
+.synergy-line {
+    background: rgba(255,213,79,0.05);
+    border-left: 2px solid var(--color-gold);
+    padding-left: 10px !important;
+}
+
+/* === 累计收益子行（系统六） === */
+.finance-sub-line {
+    font-size: 11px !important;
+    padding-left: 16px !important;
+    color: var(--color-text-dim) !important;
+    opacity: 0.7;
+}
+
+/* === 低满意度氛围（系统三） === */
+.low-satisfaction .panel-finance { border-right-color: rgba(239,83,80,0.3); }
+.low-satisfaction .game-header { border-bottom-color: rgba(239,83,80,0.3); }
+.crisis-satisfaction { animation: crisisPulse 3s ease-in-out infinite; }
+@keyframes crisisPulse {
+    0%, 100% { background-color: var(--color-bg); }
+    50% { background-color: rgba(239,83,80,0.05); }
+}
+
 /* === 响应式 === */
 @media (max-width: 800px) {
     .game-body { flex-direction: column; }
@@ -300,7 +426,13 @@ body {
     .career-list { grid-template-columns: 1fr; }
     .game-title { font-size: 42px; }
     .header-left, .header-right { gap: 8px; }
+    .header-center { display: none; }
     .career-display { display: none; }
     .modal-card { padding: 20px; margin: 10px; }
     .stats-grid { grid-template-columns: 1fr; }
+    .reserve-display { display: none; }
+    .quadrant-indicator .quad-arrow { display: none; }
+    .cashflow-diagram { padding: 8px; }
+    .flow-box { font-size: 10px; padding: 3px 6px; }
+    .gameover-stats { grid-template-columns: 1fr 1fr; }
 }

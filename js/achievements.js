@@ -13,7 +13,19 @@ const ACHIEVEMENTS = [
     { id: 'diversified', name: '分散投资', desc: '同时持有3种类型资产', icon: '🌐' },
     { id: 'debt_free', name: '无债一身轻', desc: '还清所有负债（含初始负债）', icon: '🕊️' },
     { id: 'reject_car', name: '拒绝车贷', desc: '拒绝买新车的诱惑', icon: '🚫' },
-    { id: 'survivor', name: '绝地求生', desc: '现金低于¥1000后逆转通关', icon: '🔥' }
+    { id: 'survivor', name: '绝地求生', desc: '现金低于¥1000后逆转通关', icon: '🔥' },
+    // V3 achievements
+    { id: 'quadrant_s', name: '自由职业者', desc: '进化到S象限', icon: '🔧' },
+    { id: 'quadrant_b', name: '企业主', desc: '进化到B象限', icon: '🏢' },
+    { id: 'quadrant_i', name: '投资家', desc: '进化到I象限', icon: '👑' },
+    { id: 'synergy_first', name: '协同效应', desc: '首次触发资产协同效应', icon: '🔗' },
+    { id: 'synergy_3', name: '协同大师', desc: '同时激活3个协同效应', icon: '⚙️' },
+    { id: 'iq_max', name: '财商满级', desc: '财商等级达到3级', icon: '🧠' },
+    { id: 'protection_max', name: '铜墙铁壁', desc: '资产保护等级达到3级', icon: '🛡️' },
+    { id: 'phoenix', name: '浴火重生', desc: '破产重启后达成财务自由', icon: '🐦' },
+    { id: 'rich_pattern', name: '富人模式', desc: '现金流模式达到富人模式', icon: '💫' },
+    { id: 'payselfirst', name: '先付自己', desc: '投资准备金累计达到¥50,000', icon: '🏦' },
+    { id: 'satisfaction_max', name: '心满意足', desc: '满意度达到100', icon: '😊' }
 ];
 
 const AchievementChecker = {
@@ -63,6 +75,37 @@ const AchievementChecker = {
 
         // quiz_master: 累计
         if (globalStats && globalStats.totalQuizCorrect >= 20) tryUnlock('quiz_master');
+
+        // V3 achievements
+
+        // quadrant evolution
+        if (player.quadrant === 'S' || player.quadrant === 'B' || player.quadrant === 'I') tryUnlock('quadrant_s');
+        if (player.quadrant === 'B' || player.quadrant === 'I') tryUnlock('quadrant_b');
+        if (player.quadrant === 'I') tryUnlock('quadrant_i');
+
+        // synergy
+        const activeSynergies = player.getActiveSynergies ? player.getActiveSynergies() : (player.activeSynergies || []);
+        if (activeSynergies.length >= 1) tryUnlock('synergy_first');
+        if (activeSynergies.length >= 3) tryUnlock('synergy_3');
+
+        // financial IQ max
+        if (player.financialIQ >= 3) tryUnlock('iq_max');
+
+        // protection max
+        if (player.protectionLevel >= 3) tryUnlock('protection_max');
+
+        // phoenix: restart then win
+        if (event === 'game_win' && player.restartCount > 0) tryUnlock('phoenix');
+
+        // rich pattern
+        if (player.getCashflowPattern && player.getCashflowPattern() === 'rich') tryUnlock('rich_pattern');
+        if (player.lastCashflowPattern === 'rich') tryUnlock('rich_pattern');
+
+        // pay self first reserve
+        if (player.investReserve >= 50000) tryUnlock('payselfirst');
+
+        // satisfaction max
+        if (player.satisfaction >= 100) tryUnlock('satisfaction_max');
 
         // 保存新成就
         if (newlyUnlocked.length > 0) {

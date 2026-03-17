@@ -1,5 +1,5 @@
 /**
- * 游戏入口 V2 - 初始化与事件绑定
+ * 游戏入口 V3 - 初始化与事件绑定
  */
 (function () {
     window.game = null;
@@ -83,6 +83,11 @@
         // 存档
         document.getElementById('btn-save').addEventListener('click', () => {
             if (window.game) window.game.save();
+        });
+
+        // 先付自己比例切换
+        document.getElementById('payself-btn').addEventListener('click', () => {
+            if (window.game) window.game.cyclePaySelfRate();
         });
 
         // 退出

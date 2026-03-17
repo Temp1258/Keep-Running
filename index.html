@@ -94,11 +94,19 @@
     <div id="screen-game" class="screen">
         <div class="game-header">
             <div class="header-left">
+                <span id="quadrant-indicator" class="quadrant-indicator"></span>
                 <span class="month-display">第 <span id="current-month">1</span> 月</span>
                 <span id="month-countdown" class="countdown-display">剩余60月</span>
                 <span class="career-display" id="player-career"></span>
             </div>
+            <div class="header-center">
+                <span id="satisfaction-display" class="satisfaction-display"></span>
+                <span id="financial-iq" class="header-badge iq-badge" title="财商等级">IQ:0</span>
+                <span id="protection-level" class="header-badge prot-badge" title="保护等级" style="display:none">护:0</span>
+            </div>
             <div class="header-right">
+                <span id="reserve-display" class="reserve-display" title="投资准备金">储备:¥0</span>
+                <button id="payself-btn" class="btn btn-small btn-payself" title="点击切换先付自己比例">自付:0%</button>
                 <span class="cash-display">现金: ¥<span id="player-cash">0</span></span>
                 <button id="btn-save" class="btn btn-small">存档</button>
                 <button id="btn-quit" class="btn btn-small">退出</button>
@@ -109,6 +117,12 @@
             <!-- 左侧：财务报表 -->
             <div class="panel panel-finance">
                 <h3>财务报表</h3>
+                <!-- V3: 现金流模式图 -->
+                <div class="cashflow-diagram">
+                    <div class="flow-label">你的现金流模式</div>
+                    <div class="flow-visual" id="cashflow-pattern"></div>
+                    <div class="flow-type" id="flow-type-label">穷人模式</div>
+                </div>
                 <div class="finance-section">
                     <div class="section-header income-header">
                         <span>收入</span>

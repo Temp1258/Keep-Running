@@ -1,5 +1,5 @@
 /**
- * localStorage 存档管理 V2
+ * localStorage 存档管理 V3
  * 支持3个存档槽位 + 全局统计 + 成就
  */
 const Storage = {
@@ -7,7 +7,7 @@ const Storage = {
     STATS_KEY: 'cashflow_stats',
     ACHIEVE_KEY: 'cashflow_achievements',
     MAX_SLOTS: 3,
-    SAVE_VERSION: 2,
+    SAVE_VERSION: 3,
 
     // === 存档管理 ===
 
@@ -46,27 +46,58 @@ const Storage = {
         return Player.fromJSON(saveData.player);
     },
 
-    /** V1→V2迁移 */
+    /** 版本迁移：V1→V2→V3 */
     migrate(playerData) {
-        // 补充V2新增字段的默认值
-        playerData.history = playerData.history || [];
-        playerData.decisions = playerData.decisions || [];
-        playerData.quizTotal = playerData.quizTotal || 0;
-        playerData.quizCorrect = playerData.quizCorrect || 0;
-        playerData.optionalRejected = playerData.optionalRejected || 0;
-        playerData.optionalAccepted = playerData.optionalAccepted || 0;
-        playerData.lowestCash = playerData.lowestCash !== undefined ? playerData.lowestCash : playerData.cash;
-        playerData.hasInsurance = playerData.hasInsurance || false;
-        // 给支出补充inflatable字段
-        if (playerData.expenses) {
-            playerData.expenses.forEach(e => {
-                if (e.inflatable === undefined) {
-                    e.inflatable = !e.name.includes('月供') && !e.name.includes('还款') &&
-                                   !e.name.includes('保险') && !e.name.includes('贷');
-                }
-            });
+        // V1→V2: 补充V2新增字段
+        if (!playerData.version || playerData.version < 2) {
+            playerData.history = playerData.history || [];
+            playerData.decisions = playerData.decisions || [];
+            playerData.quizTotal = playerData.quizTotal || 0;
+            playerData.quizCorrect = playerData.quizCorrect || 0;
+            playerData.optionalRejected = playerData.optionalRejected || 0;
+            playerData.optionalAccepted = playerData.optionalAccepted || 0;
+            playerData.lowestCash = playerData.lowestCash !== undefined ? playerData.lowestCash : playerData.cash;
+            playerData.hasInsurance = playerData.hasInsurance || false;
+            if (playerData.expenses) {
+                playerData.expenses.forEach(e => {
+                    if (e.inflatable === undefined) {
+                        e.inflatable = !e.name.includes('月供') && !e.name.includes('还款') &&
+                                       !e.name.includes('保险') && !e.name.includes('贷');
+                    }
+                });
+            }
+            playerData.version = 2;
         }
-        playerData.version = 2;
+
+        // V2→V3: 补充V3新增字段
+        if (playerData.version < 3) {
+            playerData.investReserve = playerData.investReserve || 0;
+            playerData.paySelfRate = playerData.paySelfRate || 0;
+            playerData.satisfaction = playerData.satisfaction !== undefined ? playerData.satisfaction : 70;
+            playerData.quadrant = playerData.quadrant || 'E';
+            playerData.taxPaid = playerData.taxPaid || { salary: 0, passive: 0, capital: 0 };
+            playerData.financialIQ = playerData.financialIQ || 0;
+            playerData.protectionLevel = playerData.protectionLevel || 0;
+            playerData.restartCount = playerData.restartCount || 0;
+            playerData.answeredQuizIds = playerData.answeredQuizIds || [];
+            playerData.seenPatterns = playerData.seenPatterns || [];
+            playerData.lastCashflowPattern = playerData.lastCashflowPattern || 'poor';
+            playerData.activeSynergies = playerData.activeSynergies || [];
+            playerData.fomoQueue = playerData.fomoQueue || [];
+            playerData.lastSocialEventMonth = playerData.lastSocialEventMonth || 0;
+            playerData.pendingSocialFollowup = playerData.pendingSocialFollowup || null;
+            playerData.totalInvested = playerData.totalInvested || 0;
+            // 给现有资产补充V3追踪字段
+            if (playerData.assets) {
+                playerData.assets.forEach(a => {
+                    if (a.purchaseMonth === undefined) a.purchaseMonth = 1;
+                    if (a.totalEarned === undefined) a.totalEarned = 0;
+                    if (a.purchasePrice === undefined) a.purchasePrice = a.cost || 0;
+                });
+            }
+            playerData.version = 3;
+        }
+
         return Player.fromJSON(playerData);
     },
 
