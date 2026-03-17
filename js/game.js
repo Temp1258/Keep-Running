@@ -1,7 +1,8 @@
 /**
- * 核心游戏引擎 V3
- * 新增: 现金流模式检测、先付自己、满意度系统、税务显示、象限进化、
- *       复利追踪、财商教育、协同效应、资产保护、破产重启、FOMO、社交攀比
+ * 核心游戏引擎 V4
+ * V3: 现金流模式检测、先付自己、满意度系统、税务显示、象限进化、
+ *     复利追踪、财商教育、协同效应、资产保护、破产重启、FOMO、社交攀比
+ * V4: 多卡选择、主动行动、阶段里程碑、社交资本、职业特性、增强复盘
  */
 class Game {
     constructor(player) {
@@ -180,6 +181,14 @@ class Game {
 
     showQuadrantEvolution(targetQuadrant, onDone) {
         const player = this.player;
+
+        // V4: 满意度过低不能进化象限
+        if (!player.canEvolveQuadrant()) {
+            UI.addMessage(`满意度过低（${player.satisfaction}），心态不稳无法接受象限进化。提升到30以上再试！`, 'warning');
+            onDone();
+            return;
+        }
+
         const quadrantNames = { S: '自雇者', B: '企业主', I: '投资者' };
         const quadrantEffects = {
             S: [
@@ -262,11 +271,30 @@ class Game {
         const player = this.player;
         const year = Math.floor(player.month / 12);
 
-        // 通胀 5~8%
-        const rate = 0.05 + Math.random() * 0.03;
+        // 通胀 5~8%（后期加速：第4年起额外+2%）
+        const lateBonus = year >= 4 ? 0.02 : 0;
+        const rate = 0.05 + Math.random() * 0.03 + lateBonus;
         const increase = player.applyInflation(rate);
 
         UI.addMessage(`第${year}年结束！物价上涨 ${Math.round(rate * 100)}%，月支出增加 ¥${increase}`, 'warning');
+
+        // V4: 职业加薪（根据职业特性）
+        if (player.salaryGrowthCap > 0 && player.quadrant === 'E') {
+            const raise = Math.round(Math.random() * player.salaryGrowthCap);
+            if (raise > 0) {
+                player.salary += raise;
+                UI.addMessage(`年度加薪：月薪 +¥${raise}`, 'income');
+            }
+        }
+
+        // V4: 后期危机事件（第4年起每年有25%概率触发市场危机）
+        if (year >= 4 && Math.random() < 0.25 && player.assets.length > 0) {
+            UI.addMessage(`经济动荡！部分资产价值受到冲击`, 'expense');
+            const types = ['realestate', 'stock', 'fund', 'business'];
+            const hitType = types[Math.floor(Math.random() * types.length)];
+            player.updateAssetValues(hitType, 0.85);
+        }
+
         UI.updateFinancePanel(player, this.maxMonths);
 
         this.showAnnualReview(year, () => {
@@ -318,8 +346,65 @@ class Game {
     // ==============================
 
     drawAndProcessCard() {
-        const { type, card } = drawCard(this.player);
+        const result1 = drawCard(this.player);
 
+        // V4: 特殊事件（FOMO/社交/报复性消费/风险/教育/保护）直接处理，不给选择
+        const directTypes = ['fomo', 'social', 'risk', 'education', 'protection'];
+        if (directTypes.includes(result1.type) || (result1.type === 'expense' && result1.card.isForced)) {
+            this._processCard(result1.type, result1.card);
+            return;
+        }
+
+        // V4: 多卡选择 - 抽2-3张卡让玩家选
+        const candidates = [result1];
+        // 抽第2张（不同类型优先）
+        for (let i = 0; i < 5; i++) {
+            const r = drawCard(this.player);
+            if (!directTypes.includes(r.type) && !(r.type === 'expense' && r.card.isForced)) {
+                if (r.card.id !== result1.card.id) {
+                    candidates.push(r);
+                    break;
+                }
+            }
+        }
+        // 月份20+时抽第3张
+        if (this.player.month >= 20) {
+            for (let i = 0; i < 5; i++) {
+                const r = drawCard(this.player);
+                if (!directTypes.includes(r.type) && !(r.type === 'expense' && r.card.isForced)) {
+                    if (!candidates.some(c => c.card.id === r.card.id)) {
+                        candidates.push(r);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 社交资本影响：低社交资本时移除部分投资机会
+        const reduction = this.player.getCardPoolReduction();
+        if (reduction > 0 && candidates.length > 1) {
+            const oppCards = candidates.filter(c => c.type === 'opportunity');
+            if (oppCards.length > 0 && Math.random() < reduction) {
+                const removeIdx = candidates.indexOf(oppCards[0]);
+                if (removeIdx !== -1 && candidates.length > 1) {
+                    candidates.splice(removeIdx, 1);
+                }
+            }
+        }
+
+        if (candidates.length === 1) {
+            this._processCard(candidates[0].type, candidates[0].card);
+            return;
+        }
+
+        // 显示选择界面
+        UI.showCardChoice(candidates, (chosen) => {
+            this._processCard(chosen.type, chosen.card);
+        });
+    }
+
+    /** 处理单张卡 */
+    _processCard(type, card) {
         UI.setEventArea(`
             <div style="text-align:center">
                 <p style="font-size:18px;color:var(--color-gold);margin-bottom:8px">事件发生！</p>
@@ -342,35 +427,70 @@ class Game {
         }
     }
 
-    /** 处理投资机会（V3: 准备金支付、财商等级信息差、FOMO队列） */
+    /** 处理投资机会（V4: 准备金支付、财商等级信息差、FOMO队列、满意度/贷款限制） */
     handleOpportunity(card) {
         const player = this.player;
+
+        // V4: 贷款上限检查
+        if (card.liability && card.liability.total > player.maxLoanAmount) {
+            UI.showCard('opportunity', card, [{
+                label: '贷款资格不足', class: 'btn-secondary', disabled: true,
+                handler: () => {}
+            }, {
+                label: '放弃（超出贷款上限）', class: 'btn-danger',
+                handler: () => {
+                    UI.addMessage(`你的贷款资格不足以获批 ${card.asset.name}（上限¥${player.maxLoanAmount.toLocaleString()}）`, 'warning');
+                    this.finishTurn();
+                }
+            }], `贷款上限: ¥${player.maxLoanAmount.toLocaleString()} | 需要: ¥${card.liability.total.toLocaleString()}`);
+            return;
+        }
+
+        // V4: 满意度影响投资判断
+        const clarity = player.getInvestmentClarity();
+        if (clarity === 'blind') {
+            UI.showCard('opportunity', card, [{
+                label: '心态崩溃，无法思考投资', class: 'btn-secondary',
+                handler: () => {
+                    UI.addMessage(`满意度过低，无法做出投资决策。先照顾好自己的心态！`, 'warning');
+                    this.finishTurn();
+                }
+            }]);
+            return;
+        }
+
         const canAfford = player.getInvestableAmount() >= card.downPayment;
         const reserveNote = player.investReserve > 0
             ? `(现金 ¥${player.cash.toLocaleString()} + 准备金 ¥${player.investReserve.toLocaleString()})`
             : '';
 
+        // V4: 满意度影响信息可见度
+        const foggy = clarity === 'foggy';
+
         // 财商等级信息差
         let extraNote = reserveNote;
-        if (player.financialIQ >= 1) {
+        if (foggy) {
+            extraNote += '\n⚠ 心态低落：投资分析信息模糊，建议先调整状态';
+        }
+        if (player.financialIQ >= 1 && !foggy) {
             const net = card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
             const payback = net > 0 ? Math.ceil(card.downPayment / net) : '永不';
             extraNote += `\n净现金流: ¥${net}/月 | 回收期: ${payback}${typeof payback === 'number' ? '个月' : ''}`;
         }
-        if (player.financialIQ >= 2) {
+        if (player.financialIQ >= 2 && !foggy) {
             const net = card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
             const annualROI = card.downPayment > 0 ? ((net * 12 / card.downPayment) * 100).toFixed(1) : 0;
             const risk = net < 0 ? '高（负现金流）' : net < 200 ? '中' : '低';
             extraNote += `\n年化ROI: ${annualROI}% | 风险评级: ${risk}`;
         }
-        if (player.financialIQ >= 3) {
+        if (player.financialIQ >= 3 && !foggy) {
             const net = card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
             const advice = net > 0 ? '建议买入' : '慎重考虑';
             extraNote += `\n投资建议: ${advice}`;
         }
 
         // 72法则提示
-        if (player.financialIQ >= 1 && card.downPayment > 0) {
+        if (player.financialIQ >= 1 && card.downPayment > 0 && !foggy) {
             const net = card.monthlyIncome - (card.liability ? card.liability.monthly : 0);
             if (net > 0) {
                 const annualReturn = (net * 12 / card.downPayment) * 100;
@@ -390,6 +510,19 @@ class Game {
                     UI.addMessage(`购买了 ${card.asset.name}，每月被动收入 +¥${card.monthlyIncome}`, 'income');
                     if (card.liability) {
                         UI.addMessage(`新增贷款: ${card.liability.name}，月供 ¥${card.liability.monthly}`, 'expense');
+                    }
+                    // V4: 程序员特性 - 科技类投资收入+20%
+                    if (player.specialTrait === 'techie' && card.asset.type === 'stock') {
+                        const bonus = Math.round(card.monthlyIncome * 0.2);
+                        const inc = player.passiveIncomes.find(p => p.sourceAsset === card.asset.name);
+                        if (inc) {
+                            inc.amount += bonus;
+                            UI.addMessage(`技术洞察：科技类投资额外收入 +¥${bonus}/月`, 'income');
+                        }
+                    }
+                    // V4: 服务员特性 - 节俭买入资产满意度+5额外
+                    if (player.specialTrait === 'frugal') {
+                        player.adjustSatisfaction(3);
                     }
                     UI.updateFinancePanel(player, this.maxMonths);
                     this.checkSynergyChanges();
@@ -426,10 +559,15 @@ class Game {
         UI.showCard('opportunity', card, actions, extraNote || null);
     }
 
-    /** 处理额外支出（V3: 满意度影响） */
+    /** 处理额外支出（V4: 满意度影响+职业特性） */
     handleExpense(card) {
         const player = this.player;
         let actualAmount = card.amount;
+
+        // V4: 服务员节俭特性 - 可选消费金额减半
+        if (player.specialTrait === 'frugal' && card.optional && !card.isInsurance && !card.cashGain) {
+            actualAmount = Math.round(actualAmount * 0.5);
+        }
 
         // 保险减半医疗支出
         if (card.medicalType && player.hasInsurance) {
@@ -513,7 +651,15 @@ class Game {
                 }
             });
 
-            UI.showCard('expense', card, actions, actualAmount !== card.amount ? `(保险/保护减免后: ¥${actualAmount})` : null);
+            let discountNote = null;
+            if (actualAmount !== card.amount) {
+                const reasons = [];
+                if (card.medicalType && player.hasInsurance) reasons.push('保险减免');
+                if (card.isFine && player.protectionLevel >= 2) reasons.push('保护减免');
+                if (player.specialTrait === 'frugal' && card.optional && !card.isInsurance && !card.cashGain) reasons.push('节俭天赋');
+                discountNote = `(${reasons.join('+')}后: ¥${actualAmount})`;
+            }
+            UI.showCard('expense', card, actions, discountNote);
         } else {
             // 房东涨租
             if (card.addExpenseOnly) {
@@ -619,16 +765,22 @@ class Game {
         });
     }
 
-    /** 处理学习卡（V3: 满意度+已答题记录） */
+    /** 处理学习卡（V4: 满意度+已答题记录+教师特性） */
     handleLearning(card) {
         this.player.quizTotal++;
         UI.showLearningCard(card, (correct) => {
             if (correct) {
                 this.player.quizCorrect++;
-                this.player.receiveIncome(card.reward);
-                this.player.adjustSatisfaction(3); // 学习答对+3
+                let reward = card.reward;
+                // V4: 教师特性 - 学习奖励翻倍
+                if (this.player.specialTrait === 'learner') {
+                    reward *= 2;
+                }
+                this.player.receiveIncome(reward);
+                this.player.adjustSatisfaction(3);
                 this.player.answeredQuizIds.push(card.id);
-                UI.addMessage(`答对问题！奖励 +¥${card.reward.toLocaleString()}（满意度+3）`, 'income');
+                const traitNote = this.player.specialTrait === 'learner' ? '（教师天赋：奖励翻倍！）' : '';
+                UI.addMessage(`答对问题！奖励 +¥${reward.toLocaleString()}（满意度+3）${traitNote}`, 'income');
             } else {
                 UI.addMessage('答错了，但学到了知识！', 'warning');
             }
@@ -956,6 +1108,7 @@ class Game {
                 handler: () => {
                     player.payExpense(card.amount);
                     player.adjustSatisfaction(10);
+                    player.adjustSocialCapital(5);   // V4: 社交消费增加社交资本
                     player.optionalAccepted++;
                     player.recordDecision('spend', card.title, card.amount, 0);
                     UI.addMessage(`跟风消费 -¥${card.amount.toLocaleString()}（满意度+10）`, 'expense');
@@ -967,9 +1120,10 @@ class Game {
                 label: '专注自己的路', class: 'btn-success',
                 handler: () => {
                     player.adjustSatisfaction(-5);
+                    player.adjustSocialCapital(-8);  // V4: 拒绝社交降低社交资本
                     player.optionalRejected++;
                     player.recordDecision('refuse_spend', card.title, card.amount, 0);
-                    UI.addMessage(`拒绝攀比消费（满意度-5），3个月后会有好消息...`, 'income');
+                    UI.addMessage(`拒绝攀比消费（满意度-5，社交资本-8），3个月后会有好消息...`, 'income');
 
                     // 3个月后触发后续
                     player.pendingSocialFollowup = {
@@ -1063,6 +1217,22 @@ class Game {
             };
         }
 
+        // V4: 构建关键转折点 timeline
+        const keyMoments = [];
+        player.decisions.forEach(d => {
+            if (d.type === 'buy' && d.cashflowImpact > 200) {
+                keyMoments.push({ month: d.month, type: 'good', text: `买入${d.name}（月现金流+¥${d.cashflowImpact}）` });
+            }
+            if (d.type === 'reject' && d.monthlyIncome && d.monthlyIncome > 200) {
+                const missed = (player.month - d.month) * d.monthlyIncome;
+                keyMoments.push({ month: d.month, type: 'missed', text: `放弃${d.name}（至今可赚¥${missed.toLocaleString()}）` });
+            }
+            if (d.type === 'buy' && d.cashflowImpact < -100) {
+                keyMoments.push({ month: d.month, type: 'bad', text: `买入${d.name}（月现金流${d.cashflowImpact}）` });
+            }
+        });
+        keyMoments.sort((a, b) => a.month - b.month);
+
         UI.showGameOver(won, player, title, message, stats, {
             taxPaid: player.taxPaid,
             rejectedCosts: player.getRejectedOpportunityCost(),
@@ -1071,7 +1241,134 @@ class Game {
             financialIQ: player.financialIQ,
             protectionLevel: player.protectionLevel,
             paySelfAnalysis,
-            activeSynergies: player.getActiveSynergies()
+            activeSynergies: player.getActiveSynergies(),
+            socialCapital: player.socialCapital,
+            keyMoments: keyMoments.slice(0, 10)
+        });
+    }
+
+    // ==============================
+    // V4: 阶段里程碑系统
+    // ==============================
+
+    checkPhaseMilestone() {
+        const player = this.player;
+        const month = player.month;
+        const milestoneChecks = [
+            { month: 12, check: () => player.assets.length >= 1, pass: '你已经买了第一个资产！不错的开始。', fail: '警告：12个月了你还没有买任何资产！赶快行动！', id: 'phase_12' },
+            { month: 24, check: () => player.getPassiveIncome() >= 1000, pass: '被动收入突破¥1000！你正走在正确的道路上。', fail: '24个月了，被动收入还不到¥1000。需要加快投资节奏！', id: 'phase_24' },
+            { month: 36, check: () => player.getFreedomProgress() >= 30, pass: '财务自由进度已达30%！继续保持！', fail: '已经过了一半时间，但进度不到30%。是时候大胆投资了！', id: 'phase_36' },
+            { month: 48, check: () => player.getFreedomProgress() >= 60, pass: '财务自由进度60%！最后冲刺！', fail: '只剩12个月了，进度还不到60%。需要奇迹或策略调整！', id: 'phase_48' }
+        ];
+
+        const milestone = milestoneChecks.find(m => m.month === month && !player.milestonesPassed.includes(m.id));
+        if (!milestone) return;
+
+        player.milestonesPassed.push(milestone.id);
+        const passed = milestone.check();
+
+        if (passed) {
+            player.adjustSatisfaction(10);
+            UI.showToast(milestone.pass, 5000);
+            UI.addMessage(`里程碑达成！${milestone.pass}`, 'income');
+        } else {
+            player.adjustSatisfaction(-5);
+            UI.showToast(milestone.fail, 5000);
+            UI.addMessage(`里程碑未达标：${milestone.fail}`, 'warning');
+        }
+    }
+
+    // ==============================
+    // V4: 主动行动系统
+    // ==============================
+
+    /** 显示主动行动菜单 */
+    showActionMenu() {
+        const player = this.player;
+        if (player.actionUsedThisMonth) {
+            UI.showToast('本月已使用过主动行动', 2000);
+            return;
+        }
+
+        const actions = [
+            {
+                label: '搜索投资机会',
+                desc: '主动寻找一个投资机会（消耗行动点）',
+                icon: '🔍',
+                disabled: player.getInvestmentClarity() === 'blind',
+                handler: () => {
+                    player.actionUsedThisMonth = true;
+                    player.adjustSocialCapital(2);  // 搜索过程中建立人脉
+                    // 抽一张投资卡
+                    let pool = CARDS.opportunity.filter(card => {
+                        if ((card.unlockMonth || 1) > player.month) return false;
+                        if (card.requireQuadrant && card.requireQuadrant !== player.quadrant) return false;
+                        return true;
+                    });
+                    if (pool.length > 0) {
+                        const card = pool[Math.floor(Math.random() * pool.length)];
+                        UI.addMessage(`主动搜索到投资机会: ${card.asset.name}`, 'info');
+                        this.handleOpportunity(card);
+                    } else {
+                        UI.addMessage('没有找到合适的投资机会', 'warning');
+                        UI.updateFinancePanel(player, this.maxMonths);
+                    }
+                }
+            },
+            {
+                label: '自修财商课程',
+                desc: '花¥500自学，有50%概率提升信息（不浪费行动点）',
+                icon: '📖',
+                disabled: player.cash < 500,
+                handler: () => {
+                    player.actionUsedThisMonth = true;
+                    player.payExpense(500);
+                    if (Math.random() < 0.5) {
+                        const unanswered = CARDS.learning.filter(c => !player.answeredQuizIds.includes(c.id));
+                        if (unanswered.length > 0) {
+                            const card = unanswered[Math.floor(Math.random() * unanswered.length)];
+                            this.handleLearning(card);
+                            return;
+                        }
+                    }
+                    player.adjustSatisfaction(2);
+                    UI.addMessage(`自学花费¥500，增长了见识（满意度+2）`, 'info');
+                    // 教师特性：学习奖励翻倍
+                    if (player.specialTrait === 'learner') {
+                        player.receiveIncome(500);
+                        UI.addMessage(`教师天赋：学习心得转化收入 +¥500`, 'income');
+                    }
+                    UI.updateFinancePanel(player, this.maxMonths);
+                }
+            },
+            {
+                label: '社交聚会',
+                desc: '花¥800参加聚会，恢复社交资本和满意度',
+                icon: '🤝',
+                disabled: player.cash < 800,
+                handler: () => {
+                    player.actionUsedThisMonth = true;
+                    player.payExpense(800);
+                    player.adjustSocialCapital(10);
+                    player.adjustSatisfaction(8);
+                    UI.addMessage(`参加社交聚会（社交资本+10，满意度+8）`, 'info');
+                    // 医生特性：社交带来投资信息
+                    if (player.specialTrait === 'connected' && Math.random() < 0.4) {
+                        UI.addMessage(`人脉优势：聚会中获得内部投资消息！`, 'income');
+                        let pool = CARDS.opportunity.filter(c => (c.unlockMonth || 1) <= player.month + 6);
+                        if (pool.length > 0) {
+                            const card = pool[Math.floor(Math.random() * pool.length)];
+                            setTimeout(() => this.handleOpportunity(card), 500);
+                            return;
+                        }
+                    }
+                    UI.updateFinancePanel(player, this.maxMonths);
+                }
+            }
+        ];
+
+        UI.showActionMenu(actions, () => {
+            // 取消不消耗行动
         });
     }
 
@@ -1079,6 +1376,18 @@ class Game {
         this.isProcessing = false;
         const player = this.player;
         const remaining = this.maxMonths - player.month + 1;
+
+        // V4: 重置每月主动行动
+        player.actionUsedThisMonth = false;
+        player.searchUsedThisMonth = false;
+
+        // V4: 阶段里程碑检查
+        this.checkPhaseMilestone();
+
+        // V4: 后期挑战 - 40月后事件强度增加
+        if (player.month >= 48 && player.month % 3 === 0) {
+            UI.addMessage(`最后冲刺阶段！市场波动加剧...`, 'warning');
+        }
 
         // 满意度里程碑检查
         const progress = player.getFreedomProgress();
@@ -1103,15 +1412,33 @@ class Game {
             UI.showToast(`被动收入突破 ¥${passiveK * 1000}！满意度+10`, 3000);
         }
 
+        // V4: 社交资本自然恢复（每月+1）
+        player.adjustSocialCapital(1);
+
         UI.updateFinancePanel(player, this.maxMonths);
+
+        // V4: 动态提示区域（含主动行动按钮）
+        const phaseWarning = remaining <= 12 ? `<p style="color:var(--color-negative);margin-top:8px;font-weight:600;font-size:18px">最后 ${remaining} 个月！</p>` :
+                             remaining <= 24 ? `<p style="color:var(--color-gold);margin-top:8px">剩余 ${remaining} 个月</p>` : '';
+
+        const actionBtnHtml = !player.actionUsedThisMonth ?
+            `<button id="btn-action-menu" class="btn btn-small" style="margin-top:12px;background:rgba(255,213,79,0.15);color:var(--color-gold);border:1px solid rgba(255,213,79,0.3)">主动行动</button>` : '';
 
         UI.setEventArea(`
             <div style="text-align:center">
                 <p style="font-size:16px;margin-bottom:8px">第 ${player.month} 月 / 共 ${this.maxMonths} 月</p>
                 <p style="color:var(--color-text-dim)">点击下方按钮进入下个月</p>
-                ${remaining <= 10 ? `<p style="color:var(--color-negative);margin-top:8px;font-weight:600">剩余 ${remaining} 个月！</p>` : ''}
+                ${phaseWarning}
+                ${actionBtnHtml}
             </div>
         `);
+
+        // 绑定主动行动按钮
+        const actionBtn = document.getElementById('btn-action-menu');
+        if (actionBtn) {
+            actionBtn.addEventListener('click', () => this.showActionMenu());
+        }
+
         document.getElementById('btn-next-month').disabled = false;
     }
 

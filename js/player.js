@@ -135,6 +135,29 @@ class Player {
 
         // 累计投资总额（用于先付自己的分析报告）
         this.totalInvested = 0;
+
+        // === V4 新增字段 ===
+
+        // 社交资本 (0-100)，影响投资机会来源
+        this.socialCapital = career.socialCapital || 50;
+
+        // 职业特性
+        this.specialTrait = career.specialTrait || null;
+
+        // 贷款上限
+        this.maxLoanAmount = career.maxLoanAmount || 100000;
+
+        // 薪资涨幅上限
+        this.salaryGrowthCap = career.salaryGrowthCap || 0;
+
+        // 里程碑追踪
+        this.milestonesPassed = [];
+
+        // 主动行动次数（每月限1次额外行动）
+        this.actionUsedThisMonth = false;
+
+        // 本月是否已用"搜索投资"
+        this.searchUsedThisMonth = false;
     }
 
     /** 生成唯一关联ID */
@@ -726,6 +749,36 @@ class Player {
     }
 
     // ==============================
+    // V4: 社交资本
+    // ==============================
+
+    /** 调整社交资本 */
+    adjustSocialCapital(delta) {
+        this.socialCapital = Math.max(0, Math.min(100, this.socialCapital + delta));
+    }
+
+    /** 社交资本影响：投资卡池是否被限制 */
+    getCardPoolReduction() {
+        if (this.socialCapital >= 60) return 0;     // 正常卡池
+        if (this.socialCapital >= 40) return 0.15;   // 减少15%投资机会
+        if (this.socialCapital >= 20) return 0.30;   // 减少30%
+        return 0.50;                                  // 减少50%
+    }
+
+    /** 满意度是否影响投资判断（V4） */
+    getInvestmentClarity() {
+        if (this.satisfaction >= 60) return 'clear';     // 看到完整信息
+        if (this.satisfaction >= 40) return 'normal';    // 正常
+        if (this.satisfaction >= 20) return 'foggy';     // 部分信息模糊
+        return 'blind';                                   // 无法做投资决策
+    }
+
+    /** 满意度是否影响象限进化（V4） */
+    canEvolveQuadrant() {
+        return this.satisfaction >= 30;
+    }
+
+    // ==============================
     // 破产重启（系统十）
     // ==============================
 
@@ -778,7 +831,7 @@ class Player {
 
     toJSON() {
         return {
-            version: 3,
+            version: 4,
             careerData: this.careerData,
             careerName: this.careerName,
             salary: this.salary,
@@ -812,7 +865,15 @@ class Player {
             fomoQueue: this.fomoQueue,
             lastSocialEventMonth: this.lastSocialEventMonth,
             pendingSocialFollowup: this.pendingSocialFollowup,
-            totalInvested: this.totalInvested
+            totalInvested: this.totalInvested,
+            // V4 fields
+            socialCapital: this.socialCapital,
+            specialTrait: this.specialTrait,
+            maxLoanAmount: this.maxLoanAmount,
+            salaryGrowthCap: this.salaryGrowthCap,
+            milestonesPassed: this.milestonesPassed,
+            actionUsedThisMonth: this.actionUsedThisMonth,
+            searchUsedThisMonth: this.searchUsedThisMonth
         };
     }
 
@@ -851,6 +912,14 @@ class Player {
         p.lastSocialEventMonth = data.lastSocialEventMonth || 0;
         p.pendingSocialFollowup = data.pendingSocialFollowup || null;
         p.totalInvested = data.totalInvested || 0;
+        // V4 fields
+        p.socialCapital = data.socialCapital !== undefined ? data.socialCapital : 50;
+        p.specialTrait = data.specialTrait || null;
+        p.maxLoanAmount = data.maxLoanAmount || 100000;
+        p.salaryGrowthCap = data.salaryGrowthCap || 0;
+        p.milestonesPassed = data.milestonesPassed || [];
+        p.actionUsedThisMonth = data.actionUsedThisMonth || false;
+        p.searchUsedThisMonth = data.searchUsedThisMonth || false;
         return p;
     }
 }
