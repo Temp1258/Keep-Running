@@ -28,7 +28,14 @@
     <div id="screen-career" class="screen">
         <div class="career-container">
             <h2>选择你的职业</h2>
-            <p class="career-hint">不同职业有不同的起始收入和支出，难度各异。你有60个月实现财务自由！</p>
+            <p class="career-hint">不同职业有不同的起始收入和支出，难度各异。选择游戏时长后开始挑战！</p>
+            <div class="duration-selector">
+                <span class="duration-label">游戏时长：</span>
+                <button class="btn btn-duration active" data-months="60">60个月</button>
+                <button class="btn btn-duration" data-months="120">120个月</button>
+                <button class="btn btn-duration" data-months="150">150个月</button>
+                <button class="btn btn-duration" data-months="180">180个月</button>
+            </div>
             <div id="career-list" class="career-list"></div>
             <button id="btn-back-menu" class="btn btn-text">返回主菜单</button>
         </div>
@@ -41,7 +48,7 @@
             <div class="tutorial-content">
                 <div class="tutorial-section">
                     <h3>目标</h3>
-                    <p>在<strong>60个月</strong>内让你的<strong>被动收入</strong>超过<strong>总支出</strong>，实现财务自由！</p>
+                    <p>在规定时间内让你的<strong>被动收入</strong>超过<strong>总支出</strong>，实现财务自由！可选60/120/150/180个月。</p>
                 </div>
                 <div class="tutorial-section">
                     <h3>什么是资产？</h3>
@@ -90,6 +97,14 @@
                 <div class="tutorial-section">
                     <h3>象限进化</h3>
                     <p>游戏中会显示<strong>象限进化条件</strong>。E→S需要现金+生意，S→B需要3个生意+被动收入≥5000，B→I需要被动收入≥支出80%。满意度低于30无法进化！</p>
+                </div>
+                <div class="tutorial-section">
+                    <h3>贷款系统</h3>
+                    <p>你可以通过主动行动向银行<strong>申请贷款</strong>。贷款额度和利率取决于你的<strong>信用评分</strong>（300-850分）。按时还贷提升信用分，逾期则大幅下降。用贷款买资产是"好负债"，用来消费是"坏负债"。</p>
+                </div>
+                <div class="tutorial-section">
+                    <h3>多重行动</h3>
+                    <p>每月你有<strong>2次主动行动</strong>机会：搜索投资、自修课程、社交聚会、申请贷款、兼职打工、休息调整、市场调研。合理分配行动次数，最大化每月收益！</p>
                 </div>
                 <div class="tutorial-section">
                     <h3>小贴士</h3>

@@ -5,10 +5,10 @@
  * V4: 多卡选择、主动行动、阶段里程碑、社交资本、职业特性、增强复盘
  */
 class Game {
-    constructor(player) {
+    constructor(player, maxMonths) {
         this.player = player;
         this.isProcessing = false;
-        this.maxMonths = 60;
+        this.maxMonths = maxMonths || 60;
         this.isFirstMonth = (player.month === 1);
     }
 
@@ -20,9 +20,10 @@ class Game {
         const player = this.player;
         const isNewYear = player.month > 1 && player.month % 12 === 0;
 
-        // V5: 重置每月行动标记（在月初重置，而非月末）
+        // V6: 重置每月行动标记
         player.actionUsedThisMonth = false;
         player.searchUsedThisMonth = false;
+        player.actionsUsedThisMonth = 0;
 
         // === V3 月度结算流程 ===
 
@@ -378,8 +379,8 @@ class Game {
                 }
             }
         }
-        // 月份20+时抽第3张
-        if (this.player.month >= 20) {
+        // 月份20+时或市场调研激活时抽第3张
+        if (this.player.month >= 20 || this.player._marketResearchActive) {
             for (let i = 0; i < 5; i++) {
                 const r = drawCard(this.player);
                 if (!directTypes.includes(r.type) && !(r.type === 'expense' && r.card.isForced)) {
@@ -407,6 +408,9 @@ class Game {
             this._processCard(candidates[0].type, candidates[0].card);
             return;
         }
+
+        // V6: 清除市场调研标记
+        this.player._marketResearchActive = false;
 
         // 显示选择界面
         UI.showCardChoice(candidates, (chosen) => {
@@ -1293,7 +1297,7 @@ class Game {
             message = '你成功让被动收入超过了总支出，逃出了老鼠赛跑圈！';
         } else if (reason === 'timeout') {
             title = '时间到！困在老鼠圈';
-            message = `60个月过去了，你还没有实现财务自由。被动收入 ¥${player.getPassiveIncome().toLocaleString()} / 总支出 ¥${player.getTotalExpense().toLocaleString()}。不要灰心，再试一次！`;
+            message = `${this.maxMonths}个月过去了，你还没有实现财务自由。被动收入 ¥${player.getPassiveIncome().toLocaleString()} / 总支出 ¥${player.getTotalExpense().toLocaleString()}。不要灰心，再试一次！`;
         } else {
             title = '很遗憾，你破产了';
             message = '你的现金耗尽了。管理好现金流是理财的第一步。';
@@ -1349,11 +1353,13 @@ class Game {
     checkPhaseMilestone() {
         const player = this.player;
         const month = player.month;
+        const max = this.maxMonths;
         const milestoneChecks = [
             { month: 12, check: () => player.assets.length >= 1, pass: '你已经买了第一个资产！不错的开始。', fail: '警告：12个月了你还没有买任何资产！赶快行动！', id: 'phase_12' },
-            { month: 24, check: () => player.getPassiveIncome() >= 1000, pass: '被动收入突破¥1000！你正走在正确的道路上。', fail: '24个月了，被动收入还不到¥1000。需要加快投资节奏！', id: 'phase_24' },
-            { month: 36, check: () => player.getFreedomProgress() >= 30, pass: '财务自由进度已达30%！继续保持！', fail: '已经过了一半时间，但进度不到30%。是时候大胆投资了！', id: 'phase_36' },
-            { month: 48, check: () => player.getFreedomProgress() >= 60, pass: '财务自由进度60%！最后冲刺！', fail: '只剩12个月了，进度还不到60%。需要奇迹或策略调整！', id: 'phase_48' }
+            { month: Math.round(max * 0.25), check: () => player.getPassiveIncome() >= 1000, pass: '被动收入突破¥1000！你正走在正确的道路上。', fail: '时间已过25%，被动收入还不到¥1000。需要加快投资节奏！', id: 'phase_25pct' },
+            { month: Math.round(max * 0.5), check: () => player.getFreedomProgress() >= 30, pass: '财务自由进度已达30%！继续保持！', fail: '已经过了一半时间，但进度不到30%。是时候大胆投资了！', id: 'phase_50pct' },
+            { month: Math.round(max * 0.75), check: () => player.getFreedomProgress() >= 50, pass: '财务自由进度50%！继续冲刺！', fail: '时间只剩25%，进度不到50%。需要策略调整！', id: 'phase_75pct' },
+            { month: Math.round(max * 0.9), check: () => player.getFreedomProgress() >= 80, pass: '财务自由进度80%！最后冲刺！', fail: '最后阶段了，还差很多。全力以赴！', id: 'phase_90pct' }
         ];
 
         const milestone = milestoneChecks.find(m => m.month === month && !player.milestonesPassed.includes(m.id));
@@ -1380,22 +1386,24 @@ class Game {
     /** 显示主动行动菜单 */
     showActionMenu() {
         const player = this.player;
-        if (player.actionUsedThisMonth) {
-            UI.showToast('本月已使用过主动行动', 2000);
+        if (player.actionsUsedThisMonth >= player.actionsPerMonth) {
+            UI.showToast(`本月行动次数已用完(${player.actionsPerMonth}次)`, 2000);
             return;
         }
+
+        const remainActions = player.actionsPerMonth - player.actionsUsedThisMonth;
 
         const actions = [
             {
                 label: '搜索投资机会',
-                desc: '主动寻找一个投资机会（消耗行动点）',
+                desc: '主动寻找一个投资机会',
                 icon: '🔍',
                 disabled: player.getInvestmentClarity() === 'blind',
                 handler: () => {
+                    player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
                     player.adjustSocialCapital(2);
                     UI.showToast('社交资本 +2（搜索中建立人脉）', 2000);
-                    // 抽一张投资卡
                     let pool = CARDS.opportunity.filter(card => {
                         if ((card.unlockMonth || 1) > player.month) return false;
                         if (card.requireQuadrant && card.requireQuadrant !== player.quadrant) return false;
@@ -1413,10 +1421,11 @@ class Game {
             },
             {
                 label: '自修财商课程',
-                desc: '花¥500自学，有50%概率提升信息（不浪费行动点）',
+                desc: '花¥500自学，50%概率获得学习卡',
                 icon: '📖',
                 disabled: player.cash < 500,
                 handler: () => {
+                    player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
                     player.payExpense(500);
                     if (Math.random() < 0.5) {
@@ -1429,7 +1438,6 @@ class Game {
                     }
                     player.adjustSatisfaction(2);
                     UI.addMessage(`自学花费¥500，增长了见识（满意度+2）`, 'info');
-                    // 教师特性：学习奖励翻倍
                     if (player.specialTrait === 'learner') {
                         player.receiveIncome(500);
                         UI.addMessage(`教师天赋：学习心得转化收入 +¥500`, 'income');
@@ -1443,13 +1451,13 @@ class Game {
                 icon: '🤝',
                 disabled: player.cash < 800,
                 handler: () => {
+                    player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
                     player.payExpense(800);
                     player.adjustSocialCapital(10);
                     player.adjustSatisfaction(8);
                     UI.addMessage(`参加社交聚会（社交资本+10，满意度+8）`, 'info');
                     UI.showToast('社交资本 +10（社交聚会）', 2000);
-                    // 医生特性：社交带来投资信息
                     if (player.specialTrait === 'connected' && Math.random() < 0.4) {
                         UI.addMessage(`人脉优势：聚会中获得内部投资消息！`, 'income');
                         let pool = CARDS.opportunity.filter(c => (c.unlockMonth || 1) <= player.month + 6);
@@ -1461,12 +1469,110 @@ class Game {
                     }
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
+            },
+            {
+                label: '申请贷款',
+                desc: `可贷额度 ¥${player.getAvailableLoanAmount().toLocaleString()} | 信用分 ${player.creditScore}`,
+                icon: '🏦',
+                disabled: player.getAvailableLoanAmount() <= 0,
+                handler: () => {
+                    this.showLoanPanel();
+                }
+            },
+            {
+                label: '兼职打工',
+                desc: '花费时间兼职，立即获得额外收入',
+                icon: '💪',
+                disabled: false,
+                handler: () => {
+                    player.actionsUsedThisMonth++;
+                    player.actionUsedThisMonth = true;
+                    const baseIncome = Math.round(player.salary * 0.15);
+                    const income = baseIncome + Math.floor(Math.random() * baseIncome * 0.5);
+                    player.receiveIncome(income);
+                    player.adjustSatisfaction(-3);
+                    UI.addMessage(`兼职赚了 ¥${income.toLocaleString()}（满意度-3，太累了）`, 'income');
+                    UI.updateFinancePanel(player, this.maxMonths);
+                }
+            },
+            {
+                label: '休息调整',
+                desc: '什么都不做，恢复满意度+12',
+                icon: '🧘',
+                disabled: false,
+                handler: () => {
+                    player.actionsUsedThisMonth++;
+                    player.actionUsedThisMonth = true;
+                    player.adjustSatisfaction(12);
+                    UI.addMessage(`好好休息了一下，心情好多了（满意度+12）`, 'info');
+                    UI.updateFinancePanel(player, this.maxMonths);
+                }
+            },
+            {
+                label: '市场调研',
+                desc: '花¥300调研市场，下次投资卡多一个选项',
+                icon: '📊',
+                disabled: player.cash < 300,
+                handler: () => {
+                    player.actionsUsedThisMonth++;
+                    player.actionUsedThisMonth = true;
+                    player.payExpense(300);
+                    player._marketResearchActive = true;
+                    UI.addMessage(`市场调研完成！下个月事件卡将多一个选择`, 'info');
+                    UI.updateFinancePanel(player, this.maxMonths);
+                }
             }
         ];
 
         UI.showActionMenu(actions, () => {
             // 取消不消耗行动
+        }, remainActions);
+    }
+
+    /** V6: 贷款面板 */
+    showLoanPanel() {
+        const player = this.player;
+        const maxLoan = player.getAvailableLoanAmount();
+        const annualRate = Math.max(0.03, 0.08 - (player.creditScore - 600) * 0.0002);
+
+        const loanOptions = [
+            { amount: Math.min(10000, maxLoan), term: 12, label: '小额短贷' },
+            { amount: Math.min(30000, maxLoan), term: 24, label: '中额贷款' },
+            { amount: Math.min(50000, maxLoan), term: 36, label: '大额贷款' },
+            { amount: Math.min(maxLoan, 100000), term: 48, label: '大额长贷' }
+        ].filter(o => o.amount > 0);
+
+        const actions = loanOptions.map(opt => {
+            const monthlyRate = annualRate / 12;
+            const monthly = Math.round(opt.amount * monthlyRate * Math.pow(1 + monthlyRate, opt.term) / (Math.pow(1 + monthlyRate, opt.term) - 1));
+            const totalRepay = monthly * opt.term;
+            const totalInterest = totalRepay - opt.amount;
+            return {
+                label: `${opt.label}: ¥${opt.amount.toLocaleString()} / ${opt.term}月`,
+                class: 'btn-primary',
+                handler: () => {
+                    const loan = player.takeLoan(opt.amount, opt.term);
+                    if (loan) {
+                        UI.addMessage(`贷款成功！获得 ¥${opt.amount.toLocaleString()}，月供 ¥${loan.monthly}（${opt.term}月）`, 'info');
+                        UI.addMessage(`年利率 ${(annualRate * 100).toFixed(1)}%，总利息 ¥${totalInterest.toLocaleString()}`, 'warning');
+                        UI.updateFinancePanel(player, this.maxMonths);
+                    }
+                }
+            };
         });
+
+        actions.push({
+            label: '取消', class: 'btn-secondary',
+            handler: () => {}
+        });
+
+        const card = {
+            title: '银行贷款',
+            description: `你的信用评分: ${player.creditScore} 分\n可贷额度: ¥${maxLoan.toLocaleString()}\n参考年利率: ${(annualRate * 100).toFixed(1)}%`,
+            tip: '贷款是双刃剑。用来购买资产产生正现金流是"好负债"，用来消费是"坏负债"。利率取决于信用评分。'
+        };
+
+        UI.showCard('opportunity', card, actions, `现有贷款: ${player.personalLoans.length}笔 | 信用分: ${player.creditScore}`);
     }
 
     /** 获取当前象限进化条件文本 */
@@ -1546,9 +1652,10 @@ class Game {
         const quadCondition = this.getQuadrantConditionText(player);
         const quadHtml = player.quadrant !== 'I' ? `<p style="color:var(--color-text-dim);font-size:12px;margin-top:8px;max-width:400px;margin-left:auto;margin-right:auto">${quadCondition}</p>` : '';
 
-        const actionBtnHtml = !player.actionUsedThisMonth ?
-            `<button id="btn-action-menu" class="btn btn-action-main" style="margin-top:16px">🎯 执行主动行动</button>` :
-            `<p style="color:var(--color-text-dim);font-size:12px;margin-top:12px">本月主动行动已用</p>`;
+        const remainActions = player.actionsPerMonth - player.actionsUsedThisMonth;
+        const actionBtnHtml = remainActions > 0 ?
+            `<button id="btn-action-menu" class="btn btn-action-main" style="margin-top:16px">🎯 执行主动行动 (剩余${remainActions}次)</button>` :
+            `<p style="color:var(--color-text-dim);font-size:12px;margin-top:12px">本月行动次数已用完</p>`;
 
         UI.setEventArea(`
             <div style="text-align:center">

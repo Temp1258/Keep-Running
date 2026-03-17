@@ -153,11 +153,25 @@ class Player {
         // 里程碑追踪
         this.milestonesPassed = [];
 
-        // 主动行动次数（每月限1次额外行动）
+        // 主动行动次数（每月限多次额外行动）
         this.actionUsedThisMonth = false;
 
         // 本月是否已用"搜索投资"
         this.searchUsedThisMonth = false;
+
+        // === V6 新增字段 ===
+
+        // 贷款系统
+        this.personalLoans = [];  // [{name, principal, remaining, monthly, interestRate, monthsLeft, linkedId}]
+        this.totalLoansTaken = 0;
+        this.creditScore = 600;   // 信用评分 300-850
+
+        // 副业系统
+        this.sideHustles = [];    // [{name, income, effort, linkedId}]
+
+        // 每月可用行动次数（基础2次）
+        this.actionsPerMonth = 2;
+        this.actionsUsedThisMonth = 0;
     }
 
     /** 生成唯一关联ID */
@@ -485,6 +499,9 @@ class Player {
         // 6. 贷款摊还
         this.amortizeLoans();
 
+        // 6.5 V6: 个人贷款处理
+        this.processLoans();
+
         // 7. 满意度自然衰减
         this.adjustSatisfaction(-2);
 
@@ -779,6 +796,117 @@ class Player {
     }
 
     // ==============================
+    // V6: 贷款系统
+    // ==============================
+
+    /** 获取可贷款额度 */
+    getAvailableLoanAmount() {
+        const existingLoans = this.personalLoans.reduce((sum, l) => sum + l.remaining, 0);
+        const maxTotal = this.maxLoanAmount + Math.floor(this.creditScore / 100) * 10000;
+        return Math.max(0, maxTotal - existingLoans);
+    }
+
+    /** 申请贷款 */
+    takeLoan(amount, termMonths) {
+        const available = this.getAvailableLoanAmount();
+        if (amount > available || amount <= 0) return false;
+
+        // 利率基于信用评分：600分=8%, 850分=3%
+        const baseRate = 0.08 - (this.creditScore - 600) * 0.0002;
+        const annualRate = Math.max(0.03, Math.min(0.12, baseRate));
+        const monthlyRate = annualRate / 12;
+        // 等额本息还款
+        const monthly = Math.round(amount * monthlyRate * Math.pow(1 + monthlyRate, termMonths) / (Math.pow(1 + monthlyRate, termMonths) - 1));
+
+        const linkedId = Player.generateLinkedId();
+        const loan = {
+            name: `个人贷款(¥${(amount/1000).toFixed(0)}K/${termMonths}月)`,
+            principal: amount,
+            remaining: amount,
+            monthly: monthly,
+            interestRate: annualRate,
+            monthsLeft: termMonths,
+            linkedId
+        };
+
+        this.personalLoans.push(loan);
+        this.expenses.push({ name: loan.name + '月供', amount: monthly, inflatable: false, linkedId, isLoan: true });
+        this.liabilities.push({ name: loan.name, total: amount, monthly: monthly, linkedId });
+        this.cash += amount;
+        this.totalLoansTaken += amount;
+
+        this.recordDecision('loan', loan.name, amount, -monthly);
+        return loan;
+    }
+
+    /** 提前还清个人贷款 */
+    repayLoan(loanIndex) {
+        if (loanIndex < 0 || loanIndex >= this.personalLoans.length) return false;
+        const loan = this.personalLoans[loanIndex];
+        if (this.cash < loan.remaining) return false;
+
+        this.cash -= loan.remaining;
+        const linkedId = loan.linkedId;
+
+        // 移除支出
+        const expIdx = this.expenses.findIndex(e => e.linkedId === linkedId);
+        if (expIdx !== -1) this.expenses.splice(expIdx, 1);
+
+        // 移除负债
+        const liabIdx = this.liabilities.findIndex(l => l.linkedId === linkedId);
+        if (liabIdx !== -1) this.liabilities.splice(liabIdx, 1);
+
+        const saved = loan.monthly;
+        this.personalLoans.splice(loanIndex, 1);
+
+        // 提前还贷提升信用分
+        this.creditScore = Math.min(850, this.creditScore + 15);
+
+        this.recordDecision('repay_loan', loan.name, loan.remaining, saved);
+        return { amount: loan.remaining, monthlySaved: saved };
+    }
+
+    /** 贷款月度处理（在processMonth中调用） */
+    processLoans() {
+        const toRemove = [];
+        this.personalLoans.forEach((loan, idx) => {
+            const interest = Math.round(loan.remaining * loan.interestRate / 12);
+            const principal = loan.monthly - interest;
+            loan.remaining = Math.max(0, loan.remaining - principal);
+            loan.monthsLeft--;
+
+            if (loan.monthsLeft <= 0 || loan.remaining <= 0) {
+                toRemove.push(idx);
+            }
+        });
+
+        // 清理到期贷款
+        for (let i = toRemove.length - 1; i >= 0; i--) {
+            const idx = toRemove[i];
+            const loan = this.personalLoans[idx];
+            const linkedId = loan.linkedId;
+
+            const expIdx = this.expenses.findIndex(e => e.linkedId === linkedId);
+            if (expIdx !== -1) this.expenses.splice(expIdx, 1);
+
+            const liabIdx = this.liabilities.findIndex(l => l.linkedId === linkedId);
+            if (liabIdx !== -1) this.liabilities.splice(liabIdx, 1);
+
+            this.personalLoans.splice(idx, 1);
+            this.creditScore = Math.min(850, this.creditScore + 10);
+        }
+
+        return toRemove.length;
+    }
+
+    /** 逾期处理（现金不足时） */
+    handleLoanDefault() {
+        if (this.cash < 0) {
+            this.creditScore = Math.max(300, this.creditScore - 50);
+        }
+    }
+
+    // ==============================
     // 破产重启（系统十）
     // ==============================
 
@@ -813,6 +941,10 @@ class Player {
         this.optionalRejected = 0;
         this.optionalAccepted = 0;
         this.taxPaid = { salary: 0, passive: 0, capital: 0 };
+        this.personalLoans = [];
+        this.totalLoansTaken = 0;
+        this.sideHustles = [];
+        this.actionsUsedThisMonth = 0;
 
         // 保留知识
         this.financialIQ = savedIQ;
@@ -873,7 +1005,14 @@ class Player {
             salaryGrowthCap: this.salaryGrowthCap,
             milestonesPassed: this.milestonesPassed,
             actionUsedThisMonth: this.actionUsedThisMonth,
-            searchUsedThisMonth: this.searchUsedThisMonth
+            searchUsedThisMonth: this.searchUsedThisMonth,
+            // V6 fields
+            personalLoans: this.personalLoans,
+            totalLoansTaken: this.totalLoansTaken,
+            creditScore: this.creditScore,
+            sideHustles: this.sideHustles,
+            actionsPerMonth: this.actionsPerMonth,
+            actionsUsedThisMonth: this.actionsUsedThisMonth
         };
     }
 
@@ -920,6 +1059,13 @@ class Player {
         p.milestonesPassed = data.milestonesPassed || [];
         p.actionUsedThisMonth = data.actionUsedThisMonth || false;
         p.searchUsedThisMonth = data.searchUsedThisMonth || false;
+        // V6 fields
+        p.personalLoans = data.personalLoans || [];
+        p.totalLoansTaken = data.totalLoansTaken || 0;
+        p.creditScore = data.creditScore || 600;
+        p.sideHustles = data.sideHustles || [];
+        p.actionsPerMonth = data.actionsPerMonth || 2;
+        p.actionsUsedThisMonth = data.actionsUsedThisMonth || 0;
         return p;
     }
 }
