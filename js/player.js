@@ -3,12 +3,35 @@
  * V3: 现金流模式、先付自己、满意度、税务、象限、复利追踪、财商等级、协同、资产保护、破产重启
  */
 class Player {
-    // 税率常量
+    // 税率常量（贴近中国实际税制）
     static TAX_RATES = {
-        salary: 0.20,    // 劳动收入税
-        passive: 0.05,   // 被动收入税
-        capital: 0.10    // 资产增值税
+        passive: 0.10,   // 被动收入综合税率（房租~10%，利息/股息约20%，综合取10%）
+        capital: 0.20    // 资产增值税（房产增值税20%，股票免征但游戏简化取20%）
     };
+
+    /** 累进工资税（模拟中国个税，含5000元起征点） */
+    static getSalaryTaxRate(salary) {
+        const taxable = Math.max(0, salary - 5000); // 起征点5000
+        if (taxable <= 3000) return 0.03;
+        if (taxable <= 12000) return 0.10;
+        if (taxable <= 25000) return 0.20;
+        if (taxable <= 35000) return 0.25;
+        if (taxable <= 55000) return 0.30;
+        return 0.35;
+    }
+
+    /** 计算实际工资税额（简化的累进计算） */
+    static calculateSalaryTax(salary) {
+        const taxable = Math.max(0, salary - 5000);
+        if (taxable <= 0) return 0;
+        // 简化速算扣除法
+        if (taxable <= 3000) return Math.round(taxable * 0.03);
+        if (taxable <= 12000) return Math.round(taxable * 0.10 - 210);
+        if (taxable <= 25000) return Math.round(taxable * 0.20 - 1410);
+        if (taxable <= 35000) return Math.round(taxable * 0.25 - 2660);
+        if (taxable <= 55000) return Math.round(taxable * 0.30 - 4410);
+        return Math.round(taxable * 0.35 - 7160);
+    }
 
     // 协同效应定义
     static SYNERGIES = [
@@ -164,7 +187,7 @@ class Player {
         // 贷款系统
         this.personalLoans = [];  // [{name, principal, remaining, monthly, interestRate, monthsLeft, linkedId}]
         this.totalLoansTaken = 0;
-        this.creditScore = 600;   // 信用评分 300-850
+        this.creditScore = 650;   // 信用评分 350-950（芝麻信用体系）
 
         // 副业系统
         this.sideHustles = [];    // [{name, income, effort, linkedId}]
@@ -237,9 +260,9 @@ class Player {
         return this.salary + this.getPassiveIncome();
     }
 
-    /** 税后工资 */
+    /** 税后工资（累进税率） */
     getAfterTaxSalary(salaryAmount) {
-        return Math.round(salaryAmount * (1 - Player.TAX_RATES.salary));
+        return salaryAmount - Player.calculateSalaryTax(salaryAmount);
     }
 
     /** 税后被动收入 */
@@ -474,8 +497,8 @@ class Player {
         const grossSalary = this.getQuadrantSalary();
         const grossPassive = this.getPassiveIncome();
 
-        // 2. 税务扣除
-        const salaryTax = Math.round(grossSalary * Player.TAX_RATES.salary);
+        // 2. 税务扣除（累进工资税 + 被动收入税）
+        const salaryTax = Player.calculateSalaryTax(grossSalary);
         const passiveTax = Math.round(grossPassive * Player.TAX_RATES.passive);
         const netSalary = grossSalary - salaryTax;
         const netPassive = grossPassive - passiveTax;
@@ -528,11 +551,17 @@ class Player {
         };
     }
 
-    /** 贷款自然摊还 */
+    /** 贷款自然摊还（排除个人贷款，个人贷款由processLoans单独处理） */
     amortizeLoans() {
+        const personalLoanIds = new Set(this.personalLoans.map(l => l.linkedId));
         const toRemove = [];
         this.liabilities.forEach((l, idx) => {
-            const principalPayment = Math.round(l.monthly * 0.6);
+            if (personalLoanIds.has(l.linkedId)) return; // 跳过个人贷款
+            // 等额本息近似：前期利息占比高，假设年利率5%
+            const annualRate = 0.05;
+            const monthlyRate = annualRate / 12;
+            const interest = Math.round(l.total * monthlyRate);
+            const principalPayment = Math.max(0, l.monthly - interest);
             l.total -= principalPayment;
             if (l.total <= 0) {
                 toRemove.push(idx);
@@ -802,7 +831,7 @@ class Player {
     /** 获取可贷款额度 */
     getAvailableLoanAmount() {
         const existingLoans = this.personalLoans.reduce((sum, l) => sum + l.remaining, 0);
-        const maxTotal = this.maxLoanAmount + Math.floor(this.creditScore / 100) * 10000;
+        const maxTotal = this.maxLoanAmount + Math.floor((this.creditScore - 350) / 100) * 10000;
         return Math.max(0, maxTotal - existingLoans);
     }
 
@@ -811,9 +840,9 @@ class Player {
         const available = this.getAvailableLoanAmount();
         if (amount > available || amount <= 0) return false;
 
-        // 利率基于信用评分：600分=8%, 850分=3%
-        const baseRate = 0.08 - (this.creditScore - 600) * 0.0002;
-        const annualRate = Math.max(0.03, Math.min(0.12, baseRate));
+        // 利率基于信用评分（芝麻信用）：650分=8%, 950分=4%
+        const baseRate = 0.08 - (this.creditScore - 650) * 0.000133;
+        const annualRate = Math.max(0.04, Math.min(0.12, baseRate));
         const monthlyRate = annualRate / 12;
         // 等额本息还款
         const monthly = Math.round(amount * monthlyRate * Math.pow(1 + monthlyRate, termMonths) / (Math.pow(1 + monthlyRate, termMonths) - 1));
@@ -860,7 +889,7 @@ class Player {
         this.personalLoans.splice(loanIndex, 1);
 
         // 提前还贷提升信用分
-        this.creditScore = Math.min(850, this.creditScore + 15);
+        this.creditScore = Math.min(950, this.creditScore + 15);
 
         this.recordDecision('repay_loan', loan.name, loan.remaining, saved);
         return { amount: loan.remaining, monthlySaved: saved };
@@ -893,7 +922,7 @@ class Player {
             if (liabIdx !== -1) this.liabilities.splice(liabIdx, 1);
 
             this.personalLoans.splice(idx, 1);
-            this.creditScore = Math.min(850, this.creditScore + 10);
+            this.creditScore = Math.min(950, this.creditScore + 10);
         }
 
         return toRemove.length;
@@ -902,7 +931,7 @@ class Player {
     /** 逾期处理（现金不足时） */
     handleLoanDefault() {
         if (this.cash < 0) {
-            this.creditScore = Math.max(300, this.creditScore - 50);
+            this.creditScore = Math.max(350, this.creditScore - 50);
         }
     }
 
@@ -1062,7 +1091,7 @@ class Player {
         // V6 fields
         p.personalLoans = data.personalLoans || [];
         p.totalLoansTaken = data.totalLoansTaken || 0;
-        p.creditScore = data.creditScore || 600;
+        p.creditScore = data.creditScore || 650;
         p.sideHustles = data.sideHustles || [];
         p.actionsPerMonth = data.actionsPerMonth || 2;
         p.actionsUsedThisMonth = data.actionsUsedThisMonth || 0;

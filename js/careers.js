@@ -52,22 +52,22 @@ const CAREERS = [
         icon: '💻',
         difficulty: '中等',
         description: '高薪但高消费。技术背景解锁科技类投资信息。',
-        salary: 12000,
-        cash: 15000,
+        salary: 15000,
+        cash: 20000,
         expenses: [
-            { name: '房贷月供', amount: 4000, inflatable: false },
+            { name: '房贷月供', amount: 5300, inflatable: false },
             { name: '车贷月供', amount: 1500, inflatable: false },
-            { name: '生活费', amount: 2000, inflatable: true },
+            { name: '生活费', amount: 2500, inflatable: true },
             { name: '信用卡还款', amount: 500, inflatable: false },
             { name: '保险', amount: 500, inflatable: false }
         ],
         liabilities: [
-            { name: '房贷', total: 800000, monthly: 4000 },
+            { name: '房贷', total: 800000, monthly: 5300 },
             { name: '车贷', total: 150000, monthly: 1500 },
             { name: '信用卡', total: 15000, monthly: 500 }
         ],
         maxLoanAmount: 200000,
-        salaryGrowthCap: 1000,
+        salaryGrowthCap: 1500,
         socialCapital: 50,
         specialTrait: 'techie'        // 技术：科技类投资额外+20%收入
     },
@@ -77,24 +77,24 @@ const CAREERS = [
         icon: '⚕️',
         difficulty: '困难',
         description: '最高收入但负债最重。高社交资本带来更多投资渠道。',
-        salary: 20000,
-        cash: 10000,
+        salary: 25000,
+        cash: 15000,
         expenses: [
-            { name: '房贷月供', amount: 6000, inflatable: false },
+            { name: '房贷月供', amount: 9900, inflatable: false },
             { name: '车贷月供', amount: 3000, inflatable: false },
             { name: '助学贷款', amount: 2000, inflatable: false },
-            { name: '生活费', amount: 3000, inflatable: true },
+            { name: '生活费', amount: 4000, inflatable: true },
             { name: '信用卡还款', amount: 1000, inflatable: false },
             { name: '保险', amount: 800, inflatable: false }
         ],
         liabilities: [
-            { name: '房贷', total: 1500000, monthly: 6000 },
+            { name: '房贷', total: 1500000, monthly: 9900 },
             { name: '车贷', total: 350000, monthly: 3000 },
             { name: '助学贷款', total: 200000, monthly: 2000 },
             { name: '信用卡', total: 30000, monthly: 1000 }
         ],
         maxLoanAmount: 500000,
-        salaryGrowthCap: 2000,
+        salaryGrowthCap: 3000,
         socialCapital: 80,            // 高社交资本
         specialTrait: 'connected'     // 人脉：社交事件带来投资机会
     }

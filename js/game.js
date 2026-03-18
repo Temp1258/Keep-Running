@@ -103,7 +103,8 @@ class Game {
         const player = this.player;
         const quadrantLabel = { E: '工资', S: '自雇收入', B: '系统收入', I: '投资收入' };
 
-        UI.addMessage(`${quadrantLabel[player.quadrant]} ¥${result.grossSalary.toLocaleString()} → 扣税${Math.round(Player.TAX_RATES.salary * 100)}% → 到手 ¥${result.netSalary.toLocaleString()}`, 'income');
+        const salaryTaxPct = result.grossSalary > 0 ? Math.round(result.salaryTax / result.grossSalary * 100) : 0;
+        UI.addMessage(`${quadrantLabel[player.quadrant]} ¥${result.grossSalary.toLocaleString()} → 个税${salaryTaxPct}% → 到手 ¥${result.netSalary.toLocaleString()}`, 'income');
 
         if (result.grossPassive > 0) {
             UI.addMessage(`被动收入 ¥${result.grossPassive.toLocaleString()} → 扣税${Math.round(Player.TAX_RATES.passive * 100)}% → 到手 ¥${result.netPassive.toLocaleString()}`, 'income');
@@ -276,9 +277,9 @@ class Game {
         const player = this.player;
         const year = Math.floor(player.month / 12);
 
-        // 通胀 5~8%（后期加速：第4年起额外+2%）
-        const lateBonus = year >= 4 ? 0.02 : 0;
-        const rate = 0.05 + Math.random() * 0.03 + lateBonus;
+        // 通胀 2~4%（贴近中国CPI实际水平，后期轻微加速）
+        const lateBonus = year >= 4 ? 0.01 : 0;
+        const rate = 0.02 + Math.random() * 0.02 + lateBonus;
         const increase = player.applyInflation(rate);
 
         UI.addMessage(`第${year}年结束！物价上涨 ${Math.round(rate * 100)}%，月支出增加 ¥${increase}`, 'warning');
@@ -1533,7 +1534,7 @@ class Game {
     showLoanPanel() {
         const player = this.player;
         const maxLoan = player.getAvailableLoanAmount();
-        const annualRate = Math.max(0.03, 0.08 - (player.creditScore - 600) * 0.0002);
+        const annualRate = Math.max(0.04, 0.08 - (player.creditScore - 650) * 0.000133);
 
         const calcMonthly = (amount, term) => {
             const monthlyRate = annualRate / 12;

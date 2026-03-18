@@ -108,14 +108,16 @@ const UI = {
         const incomeList = document.getElementById('income-list');
         const salaryLabel = { E: '工资', S: '自雇收入', B: '系统收入', I: '投资收入' };
         const grossSalary = player.salary;
-        const netSalary = player.getAfterTaxSalary(grossSalary);
+        const salaryTax = Player.calculateSalaryTax(grossSalary);
+        const netSalary = grossSalary - salaryTax;
+        const salaryTaxPct = grossSalary > 0 ? Math.round(salaryTax / grossSalary * 100) : 0;
         let incomeItems = `<div class="finance-item">
             <span>${salaryLabel[player.quadrant] || '工资'}</span>
             <span>¥${grossSalary.toLocaleString()}</span>
         </div>
         <div class="finance-item finance-tax-line">
-            <span>└ 个税(-${Math.round(Player.TAX_RATES.salary * 100)}%)</span>
-            <span style="color:var(--color-text-dim)">-¥${(grossSalary - netSalary).toLocaleString()}</span>
+            <span>└ 个税(-${salaryTaxPct}%)</span>
+            <span style="color:var(--color-text-dim)">-¥${salaryTax.toLocaleString()}</span>
         </div>`;
 
         player.passiveIncomes.forEach(p => {
@@ -348,8 +350,8 @@ const UI = {
         const creditEl = document.getElementById('credit-score');
         if (creditEl) {
             creditEl.textContent = `信:${player.creditScore}`;
-            creditEl.style.color = player.creditScore >= 750 ? 'var(--color-income)' : player.creditScore >= 600 ? 'var(--color-gold)' : 'var(--color-expense)';
-            creditEl.title = `信用评分 ${player.creditScore}（影响贷款利率：${Math.max(3, Math.round((0.08 - (player.creditScore - 600) * 0.0002) * 100 * 10) / 10)}%）`;
+            creditEl.style.color = player.creditScore >= 800 ? 'var(--color-income)' : player.creditScore >= 650 ? 'var(--color-gold)' : 'var(--color-expense)';
+            creditEl.title = `芝麻信用 ${player.creditScore}（影响贷款利率：${Math.max(4, Math.round((0.08 - (player.creditScore - 650) * 0.000133) * 100 * 10) / 10)}%）`;
         }
 
         // 低满意度氛围
@@ -924,7 +926,7 @@ const UI = {
         const { creditScore, annualRate, maxLoan, existingLoans, calcMonthly } = config;
 
         // 信用等级文本
-        const creditLevel = creditScore >= 750 ? '优秀' : creditScore >= 650 ? '良好' : creditScore >= 550 ? '一般' : '较低';
+        const creditLevel = creditScore >= 800 ? '优秀' : creditScore >= 700 ? '良好' : creditScore >= 600 ? '一般' : '较低';
 
         let existingHtml = '';
         if (existingLoans.length > 0) {
@@ -942,7 +944,7 @@ const UI = {
 
         const detailsEl = document.getElementById('card-details');
         detailsEl.innerHTML = `
-            <div class="detail-row"><span class="detail-label">信用评分</span><span class="detail-value" style="color:${creditScore >= 700 ? 'var(--color-income)' : 'var(--color-gold)'}">${creditScore} (${creditLevel})</span></div>
+            <div class="detail-row"><span class="detail-label">芝麻信用</span><span class="detail-value" style="color:${creditScore >= 750 ? 'var(--color-income)' : 'var(--color-gold)'}">${creditScore} (${creditLevel})</span></div>
             <div class="detail-row"><span class="detail-label">年利率</span><span class="detail-value">${(annualRate * 100).toFixed(1)}%</span></div>
             <div class="detail-row"><span class="detail-label">可贷额度</span><span class="detail-value">¥${maxLoan.toLocaleString()}</span></div>
             <div class="loan-input-group">
