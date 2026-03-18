@@ -462,7 +462,7 @@ const UI = {
         document.getElementById('card-type-badge').className = 'card-type-badge badge-expense';
         document.getElementById('card-title').textContent = '你破产了...但还没结束';
         document.getElementById('card-description').textContent =
-            '富爸爸说："我破产过两次，但我从未变穷过。破产是暂时的，贫穷是永远的。"';
+            '"破产只是一时的财务状况，真正的贫穷是停止学习和成长。每次跌倒都是重新出发的机会。"';
 
         document.getElementById('card-details').innerHTML = `
             <div class="detail-row"><span class="detail-label">东山再起</span><span class="detail-value">资产清零，但保留知识</span></div>
@@ -901,7 +901,7 @@ const UI = {
 
         let tipText = '通货膨胀正在侵蚀你的购买力。只有让资产增长速度超过通胀，才能真正变富。';
         if (data.taxPaid && data.taxPaid.salary > data.taxPaid.passive * 2) {
-            tipText = '富爸爸说："税法是奖励投资者的。你缴的劳动税越多，说明你还在用时间换钱。"';
+            tipText = '税制对不同收入来源的税率不同——劳动收入税率最高，投资收入税率更低。你缴的劳动税越多，说明你还在用时间换钱。';
         }
         document.getElementById('card-tip').textContent = tipText;
 
