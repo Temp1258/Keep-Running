@@ -1057,6 +1057,7 @@ const UI = {
                 <div class="stat-item"><div class="stat-label">满意度</div><div class="stat-value">${v3Data.satisfaction}</div></div>
                 <div class="stat-item"><div class="stat-label">财商等级</div><div class="stat-value">${v3Data.financialIQ}</div></div>
                 <div class="stat-item"><div class="stat-label">保护等级</div><div class="stat-value">${v3Data.protectionLevel}</div></div>
+                <div class="stat-item"><div class="stat-label">剩余负债</div><div class="stat-value" style="color:${v3Data.totalLiabilities > 0 ? 'var(--color-expense)' : 'var(--color-income)'}">${v3Data.totalLiabilities > 0 ? '¥' + v3Data.totalLiabilities.toLocaleString() : '无负债'}</div></div>
             `;
         }
 
@@ -1134,6 +1135,15 @@ const UI = {
                 analysisHtml += `<div class="report-item">${s.name}: ${s.desc} (+${Math.round(s.bonusRate * 100)}%)</div>`;
             });
             analysisHtml += '</div>';
+        }
+
+        // 负债明细
+        if (v3Data && v3Data.liabilities && v3Data.liabilities.length > 0) {
+            analysisHtml += `<div class="report-section"><h4 style="color:var(--color-expense)">未还清负债</h4>`;
+            v3Data.liabilities.forEach(l => {
+                analysisHtml += `<div class="report-item">├ ${l.name}：剩余 ¥${l.total.toLocaleString()}（月供 ¥${l.monthly.toLocaleString()}）</div>`;
+            });
+            analysisHtml += `<div class="report-item" style="color:var(--color-gold)">负债不是坏事，关键是负债换来的资产是否产生正现金流。</div></div>`;
         }
 
         // 学习统计

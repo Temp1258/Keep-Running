@@ -1613,7 +1613,9 @@ class Game {
             paySelfAnalysis,
             activeSynergies: player.getActiveSynergies(),
             socialCapital: player.socialCapital,
-            keyMoments: keyMoments.slice(0, 10)
+            keyMoments: keyMoments.slice(0, 10),
+            liabilities: player.liabilities.map(l => ({ name: l.name, total: l.total, monthly: l.monthly })),
+            totalLiabilities: player.getTotalLiabilities()
         });
     }
 
@@ -1664,16 +1666,25 @@ class Game {
 
         const remainActions = player.actionsPerMonth - player.actionsUsedThisMonth;
 
+        // 兼职收入根据职业类型差异化：体力劳动者按固定时薪，脑力劳动者按工资比例
+        const partTimeBase = player.salary <= 6000
+            ? Math.round(800 + Math.random() * 400)    // 低薪职业：跑腿送餐等，约¥800-1200
+            : player.salary <= 10000
+            ? Math.round(player.salary * 0.12 + Math.random() * 300)  // 中薪：家教/代班等
+            : Math.round(player.salary * 0.08 + Math.random() * 500); // 高薪：咨询/接私活等，比例更低
+        const partTimeIncome = player.specialTrait === 'hustler' ? partTimeBase * 2 : partTimeBase;
+
         const actions = [
             {
                 label: '搜索投资机会',
-                desc: '主动寻找一个投资机会',
+                desc: '花时间跑中介、看盘，寻找投资标的（满意度-1）',
                 icon: '🔍',
                 disabled: player.getInvestmentClarity() === 'blind',
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
                     player.adjustSocialCapital(2);
+                    player.adjustSatisfaction(-1); // 看盘跑腿也是消耗精力的
                     UI.showToast('社交资本 +2（搜索中建立人脉）', 2000);
                     let pool = CARDS.opportunity.filter(card => {
                         if ((card.unlockMonth || 1) > player.month) return false;
@@ -1682,24 +1693,25 @@ class Game {
                     });
                     if (pool.length > 0) {
                         const card = pool[Math.floor(Math.random() * pool.length)];
-                        UI.addMessage(`主动搜索到投资机会: ${card.asset.name}`, 'info');
+                        UI.addMessage(`主动搜索到投资机会: ${card.asset.name}（满意度-1）`, 'info');
                         this.handleOpportunity(card);
                     } else {
-                        UI.addMessage('没有找到合适的投资机会', 'warning');
+                        UI.addMessage('跑了一圈没有找到合适的投资机会（满意度-1）', 'warning');
                         UI.updateFinancePanel(player, this.maxMonths);
                     }
                 }
             },
             {
                 label: '自修财商课程',
-                desc: '花¥500自学，50%概率获得学习卡',
+                desc: '花¥1200报名线上理财课程，60%概率获得学习卡',
                 icon: '📖',
-                disabled: player.cash < 500,
+                disabled: player.cash < 1200,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    player.payExpense(500);
-                    if (Math.random() < 0.5) {
+                    player.payExpense(1200);
+                    player.adjustSatisfaction(-1); // 学习需要消耗精力
+                    if (Math.random() < 0.6) {
                         const unanswered = CARDS.learning.filter(c => !player.answeredQuizIds.includes(c.id));
                         if (unanswered.length > 0) {
                             const card = unanswered[Math.floor(Math.random() * unanswered.length)];
@@ -1707,30 +1719,30 @@ class Game {
                             return;
                         }
                     }
-                    player.adjustSatisfaction(2);
-                    UI.addMessage(`自学花费¥500，增长了见识（满意度+2）`, 'info');
+                    player.adjustSatisfaction(3); // 学完有收获感 (净+2)
+                    UI.addMessage(`自学花费¥1,200，增长了见识（满意度+2）`, 'info');
                     if (player.specialTrait === 'learner') {
-                        player.receiveIncome(500);
-                        UI.addMessage(`教师天赋：学习心得转化收入 +¥500`, 'income');
+                        player.receiveIncome(800);
+                        UI.addMessage(`教师天赋：学习心得转化为咨询收入 +¥800`, 'income');
                     }
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             },
             {
                 label: '社交聚会',
-                desc: '花¥800参加聚会，恢复社交资本和满意度',
+                desc: '花¥300请客吃饭拓展人脉（社交+8，满意度+5）',
                 icon: '🤝',
-                disabled: player.cash < 800,
+                disabled: player.cash < 300,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    player.payExpense(800);
-                    player.adjustSocialCapital(10);
-                    player.adjustSatisfaction(8);
-                    UI.addMessage(`参加社交聚会（社交资本+10，满意度+8）`, 'info');
-                    UI.showToast('社交资本 +10（社交聚会）', 2000);
+                    player.payExpense(300);
+                    player.adjustSocialCapital(8);
+                    player.adjustSatisfaction(5);
+                    UI.addMessage(`请朋友吃饭聊天，维护了关系网（社交资本+8，满意度+5）`, 'info');
+                    UI.showToast('社交资本 +8（社交聚会）', 2000);
                     if (player.specialTrait === 'connected' && Math.random() < 0.4) {
-                        UI.addMessage(`人脉优势：聚会中获得内部投资消息！`, 'income');
+                        UI.addMessage(`人脉优势：饭局上获得内部投资消息！`, 'income');
                         let pool = CARDS.opportunity.filter(c => (c.unlockMonth || 1) <= player.month + 6);
                         if (pool.length > 0) {
                             const card = pool[Math.floor(Math.random() * pool.length)];
@@ -1752,47 +1764,45 @@ class Game {
             },
             {
                 label: '兼职打工',
-                desc: '花费时间兼职，立即获得额外收入',
+                desc: `下班后兼职赚外快，预计收入约¥${partTimeIncome.toLocaleString()}（满意度-5）`,
                 icon: '💪',
                 disabled: false,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    let baseIncome = Math.round(player.salary * 0.15);
-                    // 副业达人特性：兼职收入翻倍
-                    if (player.specialTrait === 'hustler') baseIncome *= 2;
-                    const income = baseIncome + Math.floor(Math.random() * baseIncome * 0.5);
-                    player.receiveIncome(income);
-                    player.adjustSatisfaction(-3);
+                    player.receiveIncome(partTimeIncome);
+                    player.adjustSatisfaction(-5); // 下班再打工确实很累
                     const traitNote = player.specialTrait === 'hustler' ? '（副业达人：收入翻倍！）' : '';
-                    UI.addMessage(`兼职赚了 ¥${income.toLocaleString()}（满意度-3）${traitNote}`, 'income');
+                    UI.addMessage(`兼职赚了 ¥${partTimeIncome.toLocaleString()}（满意度-5，加班太累了）${traitNote}`, 'income');
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             },
             {
                 label: '休息调整',
-                desc: '什么都不做，恢复满意度+12',
+                desc: `周末好好休息，恢复满意度+${player.satisfaction < 30 ? 10 : 6}`,
                 icon: '🧘',
                 disabled: false,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    player.adjustSatisfaction(12);
-                    UI.addMessage(`好好休息了一下，心情好多了（满意度+12）`, 'info');
+                    // 满意度越低休息效果越好，正常状态下回复有限（边际递减）
+                    const restore = player.satisfaction < 30 ? 10 : player.satisfaction < 50 ? 8 : 6;
+                    player.adjustSatisfaction(restore);
+                    UI.addMessage(`好好休息了一下，恢复了精力（满意度+${restore}）`, 'info');
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             },
             {
                 label: '市场调研',
-                desc: '花¥300调研市场，下次投资卡多一个选项',
+                desc: '花¥800购买行业报告和数据，下次事件卡多一个选项',
                 icon: '📊',
-                disabled: player.cash < 300,
+                disabled: player.cash < 800,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    player.payExpense(300);
+                    player.payExpense(800);
                     player._marketResearchActive = true;
-                    UI.addMessage(`市场调研完成！下个月事件卡将多一个选择`, 'info');
+                    UI.addMessage(`购买了行业分析报告，下个月事件卡将多一个选择`, 'info');
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             }

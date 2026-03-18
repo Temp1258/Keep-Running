@@ -904,6 +904,10 @@ class Player {
             loan.remaining = Math.max(0, loan.remaining - principal);
             loan.monthsLeft--;
 
+            // 同步 liabilities 中的剩余总额
+            const liab = this.liabilities.find(l => l.linkedId === loan.linkedId);
+            if (liab) liab.total = loan.remaining;
+
             if (loan.monthsLeft <= 0 || loan.remaining <= 0) {
                 toRemove.push(idx);
             }

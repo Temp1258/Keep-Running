@@ -58,7 +58,7 @@
         document.getElementById('btn-new-game').addEventListener('click', () => {
             UI.showScreen('screen-career');
             bindDurationSelector();
-            UI.renderCareerList((career) => startGame(new Player(career)));
+            UI.renderCareerList((career) => startGame(new Player(career), window.selectedDuration));
         });
 
         // 继续游戏
