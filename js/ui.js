@@ -35,7 +35,8 @@ const UI = {
             frugal: '节俭：可选消费减半',
             learner: '学者：学习奖励翻倍',
             techie: '技术：科技投资+20%',
-            connected: '人脉：社交带来投资机会'
+            connected: '人脉：社交带来投资机会',
+            hustler: '副业达人：兼职收入翻倍'
         };
         const list = document.getElementById('career-list');
         list.innerHTML = CAREERS.map(career => `
@@ -108,14 +109,16 @@ const UI = {
         const incomeList = document.getElementById('income-list');
         const salaryLabel = { E: '工资', S: '自雇收入', B: '系统收入', I: '投资收入' };
         const grossSalary = player.salary;
-        const netSalary = player.getAfterTaxSalary(grossSalary);
+        const salaryTax = Player.calculateSalaryTax(grossSalary);
+        const netSalary = grossSalary - salaryTax;
+        const salaryTaxPct = grossSalary > 0 ? Math.round(salaryTax / grossSalary * 100) : 0;
         let incomeItems = `<div class="finance-item">
             <span>${salaryLabel[player.quadrant] || '工资'}</span>
             <span>¥${grossSalary.toLocaleString()}</span>
         </div>
         <div class="finance-item finance-tax-line">
-            <span>└ 个税(-${Math.round(Player.TAX_RATES.salary * 100)}%)</span>
-            <span style="color:var(--color-text-dim)">-¥${(grossSalary - netSalary).toLocaleString()}</span>
+            <span>└ 个税(-${salaryTaxPct}%)</span>
+            <span style="color:var(--color-text-dim)">-¥${salaryTax.toLocaleString()}</span>
         </div>`;
 
         player.passiveIncomes.forEach(p => {
@@ -149,6 +152,14 @@ const UI = {
         const cfEl = document.getElementById('monthly-cashflow');
         cfEl.textContent = `¥${cashflow.toLocaleString()}`;
         cfEl.className = 'cashflow-value ' + (cashflow >= 0 ? 'cashflow-positive' : 'cashflow-negative');
+
+        // V7: 现金流变化闪烁动画
+        const cfSummary = cfEl.closest('.cashflow-summary');
+        if (cfSummary) {
+            cfSummary.classList.remove('income-flash');
+            void cfSummary.offsetWidth; // force reflow
+            cfSummary.classList.add('income-flash');
+        }
 
         // === 资产（V3: 含累计收益和ROI） ===
         const assetList = document.getElementById('asset-list');
@@ -185,18 +196,29 @@ const UI = {
             });
         });
 
-        // === 负债（含还贷按钮） ===
+        // === 负债（含还贷按钮 + V7: 贷款进度） ===
         const liabList = document.getElementById('liability-list');
         if (player.liabilities.length > 0) {
-            liabList.innerHTML = player.liabilities.map((l, i) =>
-                `<div class="finance-item finance-item-action">
+            let liabHtml = '';
+            player.liabilities.forEach((l, i) => {
+                liabHtml += `<div class="finance-item finance-item-action">
                     <span>${l.name}</span>
                     <span>
                         ¥${l.total.toLocaleString()}
                         <button class="btn-inline btn-repay" data-index="${i}" title="提前还款">还</button>
                     </span>
-                </div>`
-            ).join('');
+                </div>`;
+                // V7: 显示个人贷款进度
+                const loan = player.personalLoans.find(pl => pl.linkedId === l.linkedId);
+                if (loan) {
+                    const progress = Math.round((1 - loan.remaining / loan.principal) * 100);
+                    liabHtml += `<div class="personal-loan-item">
+                        <span>└ 月供¥${loan.monthly} | 剩${loan.monthsLeft}月 | 利率${(loan.interestRate * 100).toFixed(1)}%</span>
+                        <span><span class="loan-progress-mini"><span class="loan-progress-mini-fill" style="width:${progress}%"></span></span> ${progress}%</span>
+                    </div>`;
+                }
+            });
+            liabList.innerHTML = liabHtml;
         } else {
             liabList.innerHTML = '<div class="finance-item"><span style="color:var(--color-positive)">无负债</span><span></span></div>';
         }
@@ -209,6 +231,28 @@ const UI = {
             });
         });
 
+        // === V7: 净资产趋势 ===
+        const networthEl = document.getElementById('networth-value');
+        const networthChangeEl = document.getElementById('networth-change');
+        if (networthEl) {
+            const nw = player.getNetWorth();
+            networthEl.textContent = `¥${nw.toLocaleString()}`;
+            if (player.history.length >= 2) {
+                const prev = player.history[player.history.length - 1];
+                const diff = nw - (prev.netWorth || 0);
+                if (diff > 0) {
+                    networthChangeEl.textContent = `▲ +¥${diff.toLocaleString()}`;
+                    networthChangeEl.className = 'trend-arrow-up';
+                } else if (diff < 0) {
+                    networthChangeEl.textContent = `▼ -¥${Math.abs(diff).toLocaleString()}`;
+                    networthChangeEl.className = 'trend-arrow-down';
+                } else {
+                    networthChangeEl.textContent = '━ 持平';
+                    networthChangeEl.className = 'trend-flat';
+                }
+            }
+        }
+
         // === 进度 ===
         const progress = player.getFreedomProgress();
         document.getElementById('freedom-percent').textContent = progress + '%';
@@ -220,6 +264,19 @@ const UI = {
         document.getElementById('current-month').textContent = player.month;
         document.getElementById('player-career').textContent = player.careerName;
         document.getElementById('player-cash').textContent = player.cash.toLocaleString();
+
+        // V7: 快捷行动按钮状态
+        const actionQuickBtn = document.getElementById('btn-action-quick');
+        const actionBadge = document.getElementById('action-remain-badge');
+        if (actionQuickBtn) {
+            const remain = player.actionsPerMonth - player.actionsUsedThisMonth;
+            if (remain > 0) {
+                actionQuickBtn.style.display = '';
+                if (actionBadge) actionBadge.textContent = remain;
+            } else {
+                actionQuickBtn.style.display = 'none';
+            }
+        }
 
         // V3 头部扩展
         this.updateHeaderV3(player, maxMonths);
@@ -290,8 +347,16 @@ const UI = {
             socialEl.style.color = player.socialCapital >= 50 ? 'var(--color-income)' : player.socialCapital >= 30 ? 'var(--color-gold)' : 'var(--color-expense)';
         }
 
+        // V7: 信用评分
+        const creditEl = document.getElementById('credit-score');
+        if (creditEl) {
+            creditEl.textContent = `信:${player.creditScore}`;
+            creditEl.style.color = player.creditScore >= 800 ? 'var(--color-income)' : player.creditScore >= 650 ? 'var(--color-gold)' : 'var(--color-expense)';
+            creditEl.title = `芝麻信用 ${player.creditScore}（影响贷款利率：${Math.max(4, Math.round((0.08 - (player.creditScore - 650) * 0.000133) * 100 * 10) / 10)}%）`;
+        }
+
         // 低满意度氛围
-        const gameScreen = document.getElementById('game-screen');
+        const gameScreen = document.getElementById('screen-game');
         if (gameScreen) {
             gameScreen.classList.toggle('low-satisfaction', player.satisfaction < 40);
             gameScreen.classList.toggle('crisis-satisfaction', player.satisfaction < 20);
@@ -496,15 +561,15 @@ const UI = {
     },
 
     // === V4: 主动行动菜单 ===
-    showActionMenu(actions, onCancel) {
+    showActionMenu(actions, onCancel, remainActions) {
         const overlay = document.getElementById('modal-overlay');
         document.getElementById('card-type-badge').textContent = '主动行动';
         document.getElementById('card-type-badge').className = 'card-type-badge badge-opportunity';
-        document.getElementById('card-title').textContent = '选择一个行动';
-        document.getElementById('card-description').textContent = '每月可执行一次主动行动，主动出击而非被动等待。';
+        document.getElementById('card-title').textContent = `选择一个行动（剩余${remainActions || '?'}次）`;
+        document.getElementById('card-description').textContent = '每月可执行2次主动行动，主动出击而非被动等待。';
 
         document.getElementById('card-details').innerHTML = '';
-        document.getElementById('card-tip').textContent = '主动行动不消耗月份，但每月只能使用一次。';
+        document.getElementById('card-tip').textContent = '主动行动不消耗月份，每月共有2次行动机会。合理利用行动次数最大化收益！';
 
         const actionsEl = document.getElementById('card-actions');
         actionsEl.innerHTML = '';
@@ -849,6 +914,109 @@ const UI = {
         btn.addEventListener('click', () => { overlay.classList.add('hidden'); onClose(); });
         actionsEl.appendChild(btn);
         overlay.classList.remove('hidden');
+    },
+
+    // === V7: 增强版贷款面板 ===
+    showLoanPanel(config, onConfirm) {
+        const overlay = document.getElementById('modal-overlay');
+        document.getElementById('card-type-badge').textContent = '银行贷款';
+        document.getElementById('card-type-badge').className = 'card-type-badge badge-opportunity';
+        document.getElementById('card-title').textContent = '贷款申请';
+        document.getElementById('card-description').textContent = '';
+
+        const { creditScore, annualRate, maxLoan, existingLoans, calcMonthly } = config;
+
+        // 信用等级文本
+        const creditLevel = creditScore >= 800 ? '优秀' : creditScore >= 700 ? '良好' : creditScore >= 600 ? '一般' : '较低';
+
+        let existingHtml = '';
+        if (existingLoans.length > 0) {
+            existingHtml = `<div style="margin-top:8px;border-top:1px solid var(--color-border);padding-top:8px">
+                <span style="color:var(--color-text-dim);font-size:12px">现有贷款 (${existingLoans.length}笔):</span>`;
+            existingLoans.forEach(l => {
+                const progress = Math.round((1 - l.remaining / l.principal) * 100);
+                existingHtml += `<div class="personal-loan-item">
+                    <span>${l.name} 月供¥${l.monthly} 剩${l.monthsLeft}月</span>
+                    <span><span class="loan-progress-mini"><span class="loan-progress-mini-fill" style="width:${progress}%"></span></span> ${progress}%</span>
+                </div>`;
+            });
+            existingHtml += '</div>';
+        }
+
+        const detailsEl = document.getElementById('card-details');
+        detailsEl.innerHTML = `
+            <div class="detail-row"><span class="detail-label">芝麻信用</span><span class="detail-value" style="color:${creditScore >= 750 ? 'var(--color-income)' : 'var(--color-gold)'}">${creditScore} (${creditLevel})</span></div>
+            <div class="detail-row"><span class="detail-label">年利率</span><span class="detail-value">${(annualRate * 100).toFixed(1)}%</span></div>
+            <div class="detail-row"><span class="detail-label">可贷额度</span><span class="detail-value">¥${maxLoan.toLocaleString()}</span></div>
+            <div class="loan-input-group">
+                <input type="range" id="loan-amount-slider" min="5000" max="${maxLoan}" step="5000" value="${Math.min(20000, maxLoan)}" style="flex:2">
+                <span id="loan-amount-display" style="min-width:80px;text-align:right;font-weight:600">¥${Math.min(20000, maxLoan).toLocaleString()}</span>
+            </div>
+            <div class="loan-input-group">
+                <span style="color:var(--color-text-dim);font-size:13px;white-space:nowrap">期限:</span>
+                <select id="loan-term-select">
+                    <option value="12">12个月</option>
+                    <option value="24" selected>24个月</option>
+                    <option value="36">36个月</option>
+                    <option value="48">48个月</option>
+                    <option value="60">60个月</option>
+                </select>
+            </div>
+            <div class="loan-preview" id="loan-preview">
+                <div>月供: <span class="highlight" id="loan-monthly">--</span></div>
+                <div>总还款: <span id="loan-total-repay">--</span></div>
+                <div>总利息: <span style="color:var(--color-expense)" id="loan-total-interest">--</span></div>
+            </div>
+            ${existingHtml}`;
+
+        document.getElementById('card-tip').textContent = '贷款是双刃剑。用来购买产生正现金流的资产是"好负债"，用来消费是"坏负债"。';
+
+        // 计算并更新预览
+        const updatePreview = () => {
+            const amount = parseInt(document.getElementById('loan-amount-slider').value);
+            const term = parseInt(document.getElementById('loan-term-select').value);
+            const monthly = calcMonthly(amount, term);
+            const totalRepay = monthly * term;
+            const totalInterest = totalRepay - amount;
+            document.getElementById('loan-amount-display').textContent = `¥${amount.toLocaleString()}`;
+            document.getElementById('loan-monthly').textContent = `¥${monthly.toLocaleString()}/月`;
+            document.getElementById('loan-total-repay').textContent = `¥${totalRepay.toLocaleString()}`;
+            document.getElementById('loan-total-interest').textContent = `¥${totalInterest.toLocaleString()}`;
+        };
+
+        const actionsEl = document.getElementById('card-actions');
+        actionsEl.innerHTML = '';
+        actionsEl.style.flexDirection = 'row';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'btn btn-success';
+        confirmBtn.textContent = '确认贷款';
+        confirmBtn.addEventListener('click', () => {
+            const amount = parseInt(document.getElementById('loan-amount-slider').value);
+            const term = parseInt(document.getElementById('loan-term-select').value);
+            confirmBtn.disabled = true;
+            overlay.classList.add('hidden');
+            onConfirm(amount, term);
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-secondary';
+        cancelBtn.textContent = '取消';
+        cancelBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+
+        actionsEl.appendChild(confirmBtn);
+        actionsEl.appendChild(cancelBtn);
+
+        overlay.classList.remove('hidden');
+
+        // 绑定滑块和下拉事件（需要在DOM渲染后）
+        setTimeout(() => {
+            const slider = document.getElementById('loan-amount-slider');
+            const select = document.getElementById('loan-term-select');
+            if (slider) slider.addEventListener('input', updatePreview);
+            if (select) select.addEventListener('change', updatePreview);
+            updatePreview();
+        }, 50);
     },
 
     // === 消息日志 ===
