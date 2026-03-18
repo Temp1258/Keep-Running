@@ -3,6 +3,7 @@
  * V3: 现金流模式检测、先付自己、满意度系统、税务显示、象限进化、
  *     复利追踪、财商教育、协同效应、资产保护、破产重启、FOMO、社交攀比
  * V4: 多卡选择、主动行动、阶段里程碑、社交资本、职业特性、增强复盘
+ * V9: 多事件同时发生、职业-事件金额联动
  */
 class Game {
     constructor(player, maxMonths) {
@@ -10,6 +11,131 @@ class Game {
         this.isProcessing = false;
         this.maxMonths = maxMonths || 60;
         this.isFirstMonth = (player.month === 1);
+    }
+
+    // ==============================
+    // V9: 职业-事件金额联动
+    // ==============================
+
+    /**
+     * 根据玩家收入水平缩放事件金额
+     * 基准工资 ¥8,000（二线城市中位数），各类别缩放强度不同
+     * category:
+     *   'tax'      - 税务/罚款，线性缩放（高薪多交税）
+     *   'medical'  - 医疗支出，0.6x缩放（部分与收入相关）
+     *   'mandatory'- 强制支出（维修等），0.5x缩放
+     *   'optional' - 可选消费，0.7x缩放（生活方式通胀）
+     *   'social'   - 社交支出，0.6x缩放
+     *   'windfall' - 意外收入，0.8x缩放（奖金/退税与收入挂钩）
+     *   'career'   - 职业事件金额，线性缩放
+     *   'family'   - 家庭支出（学费/赡养），0.7x缩放
+     */
+    static scaleAmount(baseAmount, player, category) {
+        const BASE_SALARY = 8000;
+        const ratio = player.salary / BASE_SALARY;
+
+        // 缩放强度：0=不缩放, 1=完全线性
+        const intensity = {
+            tax: 1.0,       // 税款完全与收入挂钩
+            medical: 0.6,   // 医疗费部分与收入相关（高收入选择更好的医院）
+            mandatory: 0.5, // 维修费部分与生活水平相关
+            optional: 0.7,  // 消费水平与收入正相关
+            social: 0.6,    // 社交支出部分与收入相关
+            windfall: 0.8,  // 奖金/退税与收入高度相关
+            career: 1.0,    // 职业收入事件完全线性
+            family: 0.7     // 家庭支出与收入较强相关
+        };
+
+        const k = intensity[category] || 0.5;
+        // 混合缩放：scaled = base * (1 + k * (ratio - 1))
+        // 当ratio=1时返回base，ratio>1时按强度放大，ratio<1时按强度缩小
+        const factor = 1 + k * (ratio - 1);
+        // 最低不低于原值的30%，最高不超过原值的3倍
+        const clampedFactor = Math.max(0.3, Math.min(3.0, factor));
+        return Math.round(baseAmount * clampedFactor);
+    }
+
+    /** 创建事件卡的缩放副本（不修改原始数据） */
+    scaleCard(card, type) {
+        const player = this.player;
+        const scaled = { ...card };
+
+        if (type === 'expense') {
+            if (scaled.amount) {
+                // 根据事件子类型选择缩放类别
+                let cat = 'mandatory';
+                if (scaled.medicalType) cat = 'medical';
+                else if (scaled.id === 'tax_bill' || scaled.id === 'property_tax') cat = 'tax';
+                else if (scaled.id === 'child_tuition' || scaled.id === 'elderly_care') cat = 'family';
+                else if (scaled.optional && !scaled.isInsurance) cat = 'optional';
+                else if (scaled.id === 'friend_wedding' || scaled.id === 'business_dinner' || scaled.id === 'festival_gifts') cat = 'social';
+
+                scaled.amount = Game.scaleAmount(scaled.amount, player, cat);
+            }
+            // 缩放可选消费中的现金获取（如信用卡分期）
+            if (scaled.cashGain) {
+                scaled.cashGain = Game.scaleAmount(scaled.cashGain, player, 'optional');
+            }
+            // 缩放新增月支出
+            if (scaled.addExpense) {
+                scaled.addExpense = { ...scaled.addExpense };
+                let cat = scaled.id === 'elderly_care' ? 'family' : 'mandatory';
+                scaled.addExpense.amount = Game.scaleAmount(scaled.addExpense.amount, player, cat);
+            }
+            if (scaled.addExpenseOnly) {
+                scaled.addExpenseOnly = { ...scaled.addExpenseOnly };
+                scaled.addExpenseOnly.amount = Game.scaleAmount(scaled.addExpenseOnly.amount, player, 'mandatory');
+            }
+            if (scaled.addLiability) {
+                scaled.addLiability = { ...scaled.addLiability };
+                scaled.addLiability.total = Game.scaleAmount(scaled.addLiability.total, player, 'optional');
+            }
+        } else if (type === 'windfall') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'windfall');
+            }
+        } else if (type === 'career') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'career');
+            }
+            if (scaled.movingCost) {
+                scaled.movingCost = Game.scaleAmount(scaled.movingCost, player, 'mandatory');
+            }
+        } else if (type === 'chain') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'mandatory');
+            }
+            if (scaled.cost) {
+                scaled.cost = Game.scaleAmount(scaled.cost, player, 'mandatory');
+            }
+        } else if (type === 'loan') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'tax');
+            }
+        } else if (type === 'risk') {
+            // 风险事件的effects数组中的amount也需要缩放
+            if (scaled.effects) {
+                scaled.effects = scaled.effects.map(e => {
+                    const se = { ...e };
+                    if (se.amount) se.amount = Game.scaleAmount(se.amount, player, 'mandatory');
+                    return se;
+                });
+            }
+        } else if (type === 'social') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'social');
+            }
+        } else if (type === 'interaction') {
+            if (scaled.choices) {
+                scaled.choices = scaled.choices.map(c => {
+                    const sc = { ...c };
+                    if (sc.cost) sc.cost = Game.scaleAmount(sc.cost, player, 'mandatory');
+                    return sc;
+                });
+            }
+        }
+
+        return scaled;
     }
 
     /** 进入下一个月 */
@@ -358,65 +484,78 @@ class Game {
     // 抽卡与事件处理
     // ==============================
 
+    /**
+     * V9: 每月发生多个事件，全部自动触发（不再让用户选择）
+     * 基础2个事件，月份20+后3个，市场调研激活时额外+1
+     */
     drawAndProcessCard() {
-        const result1 = drawCard(this.player);
+        const events = [];
+        const usedIds = new Set();
 
-        // V4: 特殊事件（FOMO/社交/报复性消费/风险/教育/保护/资产互动）直接处理，不给选择
-        const directTypes = ['fomo', 'social', 'risk', 'education', 'protection', 'interaction'];
-        if (directTypes.includes(result1.type) || (result1.type === 'expense' && result1.card.isForced)) {
-            this._processCard(result1.type, result1.card);
-            return;
+        // 抽取事件数量：基础2个，20月后3个，市场调研+1
+        let eventCount = 2;
+        if (this.player.month >= 20) eventCount = 3;
+        if (this.player._marketResearchActive) {
+            eventCount++;
+            this.player._marketResearchActive = false;
         }
 
-        // V4: 多卡选择 - 抽2-3张卡让玩家选
-        const candidates = [result1];
-        // 抽第2张（不同类型优先）
-        for (let i = 0; i < 5; i++) {
-            const r = drawCard(this.player);
-            if (!directTypes.includes(r.type) && !(r.type === 'expense' && r.card.isForced)) {
-                if (r.card.id !== result1.card.id) {
-                    candidates.push(r);
+        // 抽取不重复的事件
+        for (let e = 0; e < eventCount; e++) {
+            for (let attempt = 0; attempt < 8; attempt++) {
+                const result = drawCard(this.player);
+                if (!usedIds.has(result.card.id)) {
+                    usedIds.add(result.card.id);
+                    events.push(result);
                     break;
-                }
-            }
-        }
-        // 月份20+时或市场调研激活时抽第3张
-        if (this.player.month >= 20 || this.player._marketResearchActive) {
-            for (let i = 0; i < 5; i++) {
-                const r = drawCard(this.player);
-                if (!directTypes.includes(r.type) && !(r.type === 'expense' && r.card.isForced)) {
-                    if (!candidates.some(c => c.card.id === r.card.id)) {
-                        candidates.push(r);
-                        break;
-                    }
                 }
             }
         }
 
         // 社交资本影响：低社交资本时移除部分投资机会
         const reduction = this.player.getCardPoolReduction();
-        if (reduction > 0 && candidates.length > 1) {
-            const oppCards = candidates.filter(c => c.type === 'opportunity');
-            if (oppCards.length > 0 && Math.random() < reduction) {
-                const removeIdx = candidates.indexOf(oppCards[0]);
-                if (removeIdx !== -1 && candidates.length > 1) {
-                    candidates.splice(removeIdx, 1);
+        if (reduction > 0) {
+            for (let i = events.length - 1; i >= 0; i--) {
+                if (events[i].type === 'opportunity' && Math.random() < reduction && events.length > 1) {
+                    events.splice(i, 1);
+                    break; // 最多移除一个
                 }
             }
         }
 
-        if (candidates.length === 1) {
-            this._processCard(candidates[0].type, candidates[0].card);
+        // 按顺序处理所有事件（上一个事件的弹窗关闭后处理下一个）
+        this._processEventQueue(events, 0);
+    }
+
+    /** 递归处理事件队列 */
+    _processEventQueue(events, index) {
+        if (index >= events.length) {
+            // 队列完成，调用真正的 finishTurn
+            this._eventQueue = null;
+            this._realFinishTurn();
             return;
         }
 
-        // V6: 清除市场调研标记
-        this.player._marketResearchActive = false;
+        // 如果已破产，不再处理后续事件
+        if (this.player.isBankrupt()) {
+            this._eventQueue = null;
+            this.handleBankruptcy();
+            return;
+        }
 
-        // 显示选择界面
-        UI.showCardChoice(candidates, (chosen) => {
-            this._processCard(chosen.type, chosen.card);
-        });
+        // 存储队列状态，让 finishTurn 知道要链式调用
+        this._eventQueue = { events, nextIndex: index + 1 };
+
+        const { type, card } = events[index];
+        // V9: 对卡牌进行职业缩放
+        const scaledCard = this.scaleCard(card, type);
+
+        // 多事件时显示进度提示
+        if (events.length > 1) {
+            UI.addMessage(`── 事件 ${index + 1}/${events.length} ──`, 'info');
+        }
+
+        this._processCard(type, scaledCard);
     }
 
     /** 处理单张卡 */
@@ -1613,7 +1752,9 @@ class Game {
             paySelfAnalysis,
             activeSynergies: player.getActiveSynergies(),
             socialCapital: player.socialCapital,
-            keyMoments: keyMoments.slice(0, 10)
+            keyMoments: keyMoments.slice(0, 10),
+            liabilities: player.liabilities.map(l => ({ name: l.name, total: l.total, monthly: l.monthly })),
+            totalLiabilities: player.getTotalLiabilities()
         });
     }
 
@@ -1664,16 +1805,25 @@ class Game {
 
         const remainActions = player.actionsPerMonth - player.actionsUsedThisMonth;
 
+        // 兼职收入根据职业类型差异化：体力劳动者按固定时薪，脑力劳动者按工资比例
+        const partTimeBase = player.salary <= 6000
+            ? Math.round(800 + Math.random() * 400)    // 低薪职业：跑腿送餐等，约¥800-1200
+            : player.salary <= 10000
+            ? Math.round(player.salary * 0.12 + Math.random() * 300)  // 中薪：家教/代班等
+            : Math.round(player.salary * 0.08 + Math.random() * 500); // 高薪：咨询/接私活等，比例更低
+        const partTimeIncome = player.specialTrait === 'hustler' ? partTimeBase * 2 : partTimeBase;
+
         const actions = [
             {
                 label: '搜索投资机会',
-                desc: '主动寻找一个投资机会',
+                desc: '花时间跑中介、看盘，寻找投资标的（满意度-1）',
                 icon: '🔍',
                 disabled: player.getInvestmentClarity() === 'blind',
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
                     player.adjustSocialCapital(2);
+                    player.adjustSatisfaction(-1); // 看盘跑腿也是消耗精力的
                     UI.showToast('社交资本 +2（搜索中建立人脉）', 2000);
                     let pool = CARDS.opportunity.filter(card => {
                         if ((card.unlockMonth || 1) > player.month) return false;
@@ -1682,24 +1832,25 @@ class Game {
                     });
                     if (pool.length > 0) {
                         const card = pool[Math.floor(Math.random() * pool.length)];
-                        UI.addMessage(`主动搜索到投资机会: ${card.asset.name}`, 'info');
+                        UI.addMessage(`主动搜索到投资机会: ${card.asset.name}（满意度-1）`, 'info');
                         this.handleOpportunity(card);
                     } else {
-                        UI.addMessage('没有找到合适的投资机会', 'warning');
+                        UI.addMessage('跑了一圈没有找到合适的投资机会（满意度-1）', 'warning');
                         UI.updateFinancePanel(player, this.maxMonths);
                     }
                 }
             },
             {
                 label: '自修财商课程',
-                desc: '花¥500自学，50%概率获得学习卡',
+                desc: '花¥1200报名线上理财课程，60%概率获得学习卡',
                 icon: '📖',
-                disabled: player.cash < 500,
+                disabled: player.cash < 1200,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    player.payExpense(500);
-                    if (Math.random() < 0.5) {
+                    player.payExpense(1200);
+                    player.adjustSatisfaction(-1); // 学习需要消耗精力
+                    if (Math.random() < 0.6) {
                         const unanswered = CARDS.learning.filter(c => !player.answeredQuizIds.includes(c.id));
                         if (unanswered.length > 0) {
                             const card = unanswered[Math.floor(Math.random() * unanswered.length)];
@@ -1707,30 +1858,30 @@ class Game {
                             return;
                         }
                     }
-                    player.adjustSatisfaction(2);
-                    UI.addMessage(`自学花费¥500，增长了见识（满意度+2）`, 'info');
+                    player.adjustSatisfaction(3); // 学完有收获感 (净+2)
+                    UI.addMessage(`自学花费¥1,200，增长了见识（满意度+2）`, 'info');
                     if (player.specialTrait === 'learner') {
-                        player.receiveIncome(500);
-                        UI.addMessage(`教师天赋：学习心得转化收入 +¥500`, 'income');
+                        player.receiveIncome(800);
+                        UI.addMessage(`教师天赋：学习心得转化为咨询收入 +¥800`, 'income');
                     }
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             },
             {
                 label: '社交聚会',
-                desc: '花¥800参加聚会，恢复社交资本和满意度',
+                desc: '花¥300请客吃饭拓展人脉（社交+8，满意度+5）',
                 icon: '🤝',
-                disabled: player.cash < 800,
+                disabled: player.cash < 300,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    player.payExpense(800);
-                    player.adjustSocialCapital(10);
-                    player.adjustSatisfaction(8);
-                    UI.addMessage(`参加社交聚会（社交资本+10，满意度+8）`, 'info');
-                    UI.showToast('社交资本 +10（社交聚会）', 2000);
+                    player.payExpense(300);
+                    player.adjustSocialCapital(8);
+                    player.adjustSatisfaction(5);
+                    UI.addMessage(`请朋友吃饭聊天，维护了关系网（社交资本+8，满意度+5）`, 'info');
+                    UI.showToast('社交资本 +8（社交聚会）', 2000);
                     if (player.specialTrait === 'connected' && Math.random() < 0.4) {
-                        UI.addMessage(`人脉优势：聚会中获得内部投资消息！`, 'income');
+                        UI.addMessage(`人脉优势：饭局上获得内部投资消息！`, 'income');
                         let pool = CARDS.opportunity.filter(c => (c.unlockMonth || 1) <= player.month + 6);
                         if (pool.length > 0) {
                             const card = pool[Math.floor(Math.random() * pool.length)];
@@ -1752,47 +1903,45 @@ class Game {
             },
             {
                 label: '兼职打工',
-                desc: '花费时间兼职，立即获得额外收入',
+                desc: `下班后兼职赚外快，预计收入约¥${partTimeIncome.toLocaleString()}（满意度-5）`,
                 icon: '💪',
                 disabled: false,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    let baseIncome = Math.round(player.salary * 0.15);
-                    // 副业达人特性：兼职收入翻倍
-                    if (player.specialTrait === 'hustler') baseIncome *= 2;
-                    const income = baseIncome + Math.floor(Math.random() * baseIncome * 0.5);
-                    player.receiveIncome(income);
-                    player.adjustSatisfaction(-3);
+                    player.receiveIncome(partTimeIncome);
+                    player.adjustSatisfaction(-5); // 下班再打工确实很累
                     const traitNote = player.specialTrait === 'hustler' ? '（副业达人：收入翻倍！）' : '';
-                    UI.addMessage(`兼职赚了 ¥${income.toLocaleString()}（满意度-3）${traitNote}`, 'income');
+                    UI.addMessage(`兼职赚了 ¥${partTimeIncome.toLocaleString()}（满意度-5，加班太累了）${traitNote}`, 'income');
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             },
             {
                 label: '休息调整',
-                desc: '什么都不做，恢复满意度+12',
+                desc: `周末好好休息，恢复满意度+${player.satisfaction < 30 ? 10 : 6}`,
                 icon: '🧘',
                 disabled: false,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    player.adjustSatisfaction(12);
-                    UI.addMessage(`好好休息了一下，心情好多了（满意度+12）`, 'info');
+                    // 满意度越低休息效果越好，正常状态下回复有限（边际递减）
+                    const restore = player.satisfaction < 30 ? 10 : player.satisfaction < 50 ? 8 : 6;
+                    player.adjustSatisfaction(restore);
+                    UI.addMessage(`好好休息了一下，恢复了精力（满意度+${restore}）`, 'info');
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             },
             {
                 label: '市场调研',
-                desc: '花¥300调研市场，下次投资卡多一个选项',
+                desc: '花¥800购买行业报告和数据，下次事件卡多一个选项',
                 icon: '📊',
-                disabled: player.cash < 300,
+                disabled: player.cash < 800,
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    player.payExpense(300);
+                    player.payExpense(800);
                     player._marketResearchActive = true;
-                    UI.addMessage(`市场调研完成！下个月事件卡将多一个选择`, 'info');
+                    UI.addMessage(`购买了行业分析报告，下个月事件卡将多一个选择`, 'info');
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             }
@@ -1857,7 +2006,22 @@ class Game {
         }
     }
 
+    /** V9: 保存真正的 finishTurn 用于事件队列结束后调用 */
+    _realFinishTurn() {
+        this._doFinishTurn();
+    }
+
     finishTurn() {
+        // V9: 如果还有排队的事件，处理下一个而不是真正结束回合
+        if (this._eventQueue) {
+            const { events, nextIndex } = this._eventQueue;
+            this._processEventQueue(events, nextIndex);
+            return;
+        }
+        this._doFinishTurn();
+    }
+
+    _doFinishTurn() {
         this.isProcessing = false;
         const player = this.player;
         const remaining = this.maxMonths - player.month + 1;
