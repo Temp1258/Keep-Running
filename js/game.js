@@ -3,6 +3,7 @@
  * V3: 现金流模式检测、先付自己、满意度系统、税务显示、象限进化、
  *     复利追踪、财商教育、协同效应、资产保护、破产重启、FOMO、社交攀比
  * V4: 多卡选择、主动行动、阶段里程碑、社交资本、职业特性、增强复盘
+ * V9: 多事件同时发生、职业-事件金额联动
  */
 class Game {
     constructor(player, maxMonths) {
@@ -10,6 +11,131 @@ class Game {
         this.isProcessing = false;
         this.maxMonths = maxMonths || 60;
         this.isFirstMonth = (player.month === 1);
+    }
+
+    // ==============================
+    // V9: 职业-事件金额联动
+    // ==============================
+
+    /**
+     * 根据玩家收入水平缩放事件金额
+     * 基准工资 ¥8,000（二线城市中位数），各类别缩放强度不同
+     * category:
+     *   'tax'      - 税务/罚款，线性缩放（高薪多交税）
+     *   'medical'  - 医疗支出，0.6x缩放（部分与收入相关）
+     *   'mandatory'- 强制支出（维修等），0.5x缩放
+     *   'optional' - 可选消费，0.7x缩放（生活方式通胀）
+     *   'social'   - 社交支出，0.6x缩放
+     *   'windfall' - 意外收入，0.8x缩放（奖金/退税与收入挂钩）
+     *   'career'   - 职业事件金额，线性缩放
+     *   'family'   - 家庭支出（学费/赡养），0.7x缩放
+     */
+    static scaleAmount(baseAmount, player, category) {
+        const BASE_SALARY = 8000;
+        const ratio = player.salary / BASE_SALARY;
+
+        // 缩放强度：0=不缩放, 1=完全线性
+        const intensity = {
+            tax: 1.0,       // 税款完全与收入挂钩
+            medical: 0.6,   // 医疗费部分与收入相关（高收入选择更好的医院）
+            mandatory: 0.5, // 维修费部分与生活水平相关
+            optional: 0.7,  // 消费水平与收入正相关
+            social: 0.6,    // 社交支出部分与收入相关
+            windfall: 0.8,  // 奖金/退税与收入高度相关
+            career: 1.0,    // 职业收入事件完全线性
+            family: 0.7     // 家庭支出与收入较强相关
+        };
+
+        const k = intensity[category] || 0.5;
+        // 混合缩放：scaled = base * (1 + k * (ratio - 1))
+        // 当ratio=1时返回base，ratio>1时按强度放大，ratio<1时按强度缩小
+        const factor = 1 + k * (ratio - 1);
+        // 最低不低于原值的30%，最高不超过原值的3倍
+        const clampedFactor = Math.max(0.3, Math.min(3.0, factor));
+        return Math.round(baseAmount * clampedFactor);
+    }
+
+    /** 创建事件卡的缩放副本（不修改原始数据） */
+    scaleCard(card, type) {
+        const player = this.player;
+        const scaled = { ...card };
+
+        if (type === 'expense') {
+            if (scaled.amount) {
+                // 根据事件子类型选择缩放类别
+                let cat = 'mandatory';
+                if (scaled.medicalType) cat = 'medical';
+                else if (scaled.id === 'tax_bill' || scaled.id === 'property_tax') cat = 'tax';
+                else if (scaled.id === 'child_tuition' || scaled.id === 'elderly_care') cat = 'family';
+                else if (scaled.optional && !scaled.isInsurance) cat = 'optional';
+                else if (scaled.id === 'friend_wedding' || scaled.id === 'business_dinner' || scaled.id === 'festival_gifts') cat = 'social';
+
+                scaled.amount = Game.scaleAmount(scaled.amount, player, cat);
+            }
+            // 缩放可选消费中的现金获取（如信用卡分期）
+            if (scaled.cashGain) {
+                scaled.cashGain = Game.scaleAmount(scaled.cashGain, player, 'optional');
+            }
+            // 缩放新增月支出
+            if (scaled.addExpense) {
+                scaled.addExpense = { ...scaled.addExpense };
+                let cat = scaled.id === 'elderly_care' ? 'family' : 'mandatory';
+                scaled.addExpense.amount = Game.scaleAmount(scaled.addExpense.amount, player, cat);
+            }
+            if (scaled.addExpenseOnly) {
+                scaled.addExpenseOnly = { ...scaled.addExpenseOnly };
+                scaled.addExpenseOnly.amount = Game.scaleAmount(scaled.addExpenseOnly.amount, player, 'mandatory');
+            }
+            if (scaled.addLiability) {
+                scaled.addLiability = { ...scaled.addLiability };
+                scaled.addLiability.total = Game.scaleAmount(scaled.addLiability.total, player, 'optional');
+            }
+        } else if (type === 'windfall') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'windfall');
+            }
+        } else if (type === 'career') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'career');
+            }
+            if (scaled.movingCost) {
+                scaled.movingCost = Game.scaleAmount(scaled.movingCost, player, 'mandatory');
+            }
+        } else if (type === 'chain') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'mandatory');
+            }
+            if (scaled.cost) {
+                scaled.cost = Game.scaleAmount(scaled.cost, player, 'mandatory');
+            }
+        } else if (type === 'loan') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'tax');
+            }
+        } else if (type === 'risk') {
+            // 风险事件的effects数组中的amount也需要缩放
+            if (scaled.effects) {
+                scaled.effects = scaled.effects.map(e => {
+                    const se = { ...e };
+                    if (se.amount) se.amount = Game.scaleAmount(se.amount, player, 'mandatory');
+                    return se;
+                });
+            }
+        } else if (type === 'social') {
+            if (scaled.amount) {
+                scaled.amount = Game.scaleAmount(scaled.amount, player, 'social');
+            }
+        } else if (type === 'interaction') {
+            if (scaled.choices) {
+                scaled.choices = scaled.choices.map(c => {
+                    const sc = { ...c };
+                    if (sc.cost) sc.cost = Game.scaleAmount(sc.cost, player, 'mandatory');
+                    return sc;
+                });
+            }
+        }
+
+        return scaled;
     }
 
     /** 进入下一个月 */
@@ -358,65 +484,78 @@ class Game {
     // 抽卡与事件处理
     // ==============================
 
+    /**
+     * V9: 每月发生多个事件，全部自动触发（不再让用户选择）
+     * 基础2个事件，月份20+后3个，市场调研激活时额外+1
+     */
     drawAndProcessCard() {
-        const result1 = drawCard(this.player);
+        const events = [];
+        const usedIds = new Set();
 
-        // V4: 特殊事件（FOMO/社交/报复性消费/风险/教育/保护/资产互动）直接处理，不给选择
-        const directTypes = ['fomo', 'social', 'risk', 'education', 'protection', 'interaction'];
-        if (directTypes.includes(result1.type) || (result1.type === 'expense' && result1.card.isForced)) {
-            this._processCard(result1.type, result1.card);
-            return;
+        // 抽取事件数量：基础2个，20月后3个，市场调研+1
+        let eventCount = 2;
+        if (this.player.month >= 20) eventCount = 3;
+        if (this.player._marketResearchActive) {
+            eventCount++;
+            this.player._marketResearchActive = false;
         }
 
-        // V4: 多卡选择 - 抽2-3张卡让玩家选
-        const candidates = [result1];
-        // 抽第2张（不同类型优先）
-        for (let i = 0; i < 5; i++) {
-            const r = drawCard(this.player);
-            if (!directTypes.includes(r.type) && !(r.type === 'expense' && r.card.isForced)) {
-                if (r.card.id !== result1.card.id) {
-                    candidates.push(r);
+        // 抽取不重复的事件
+        for (let e = 0; e < eventCount; e++) {
+            for (let attempt = 0; attempt < 8; attempt++) {
+                const result = drawCard(this.player);
+                if (!usedIds.has(result.card.id)) {
+                    usedIds.add(result.card.id);
+                    events.push(result);
                     break;
-                }
-            }
-        }
-        // 月份20+时或市场调研激活时抽第3张
-        if (this.player.month >= 20 || this.player._marketResearchActive) {
-            for (let i = 0; i < 5; i++) {
-                const r = drawCard(this.player);
-                if (!directTypes.includes(r.type) && !(r.type === 'expense' && r.card.isForced)) {
-                    if (!candidates.some(c => c.card.id === r.card.id)) {
-                        candidates.push(r);
-                        break;
-                    }
                 }
             }
         }
 
         // 社交资本影响：低社交资本时移除部分投资机会
         const reduction = this.player.getCardPoolReduction();
-        if (reduction > 0 && candidates.length > 1) {
-            const oppCards = candidates.filter(c => c.type === 'opportunity');
-            if (oppCards.length > 0 && Math.random() < reduction) {
-                const removeIdx = candidates.indexOf(oppCards[0]);
-                if (removeIdx !== -1 && candidates.length > 1) {
-                    candidates.splice(removeIdx, 1);
+        if (reduction > 0) {
+            for (let i = events.length - 1; i >= 0; i--) {
+                if (events[i].type === 'opportunity' && Math.random() < reduction && events.length > 1) {
+                    events.splice(i, 1);
+                    break; // 最多移除一个
                 }
             }
         }
 
-        if (candidates.length === 1) {
-            this._processCard(candidates[0].type, candidates[0].card);
+        // 按顺序处理所有事件（上一个事件的弹窗关闭后处理下一个）
+        this._processEventQueue(events, 0);
+    }
+
+    /** 递归处理事件队列 */
+    _processEventQueue(events, index) {
+        if (index >= events.length) {
+            // 队列完成，调用真正的 finishTurn
+            this._eventQueue = null;
+            this._realFinishTurn();
             return;
         }
 
-        // V6: 清除市场调研标记
-        this.player._marketResearchActive = false;
+        // 如果已破产，不再处理后续事件
+        if (this.player.isBankrupt()) {
+            this._eventQueue = null;
+            this.handleBankruptcy();
+            return;
+        }
 
-        // 显示选择界面
-        UI.showCardChoice(candidates, (chosen) => {
-            this._processCard(chosen.type, chosen.card);
-        });
+        // 存储队列状态，让 finishTurn 知道要链式调用
+        this._eventQueue = { events, nextIndex: index + 1 };
+
+        const { type, card } = events[index];
+        // V9: 对卡牌进行职业缩放
+        const scaledCard = this.scaleCard(card, type);
+
+        // 多事件时显示进度提示
+        if (events.length > 1) {
+            UI.addMessage(`── 事件 ${index + 1}/${events.length} ──`, 'info');
+        }
+
+        this._processCard(type, scaledCard);
     }
 
     /** 处理单张卡 */
@@ -1867,7 +2006,22 @@ class Game {
         }
     }
 
+    /** V9: 保存真正的 finishTurn 用于事件队列结束后调用 */
+    _realFinishTurn() {
+        this._doFinishTurn();
+    }
+
     finishTurn() {
+        // V9: 如果还有排队的事件，处理下一个而不是真正结束回合
+        if (this._eventQueue) {
+            const { events, nextIndex } = this._eventQueue;
+            this._processEventQueue(events, nextIndex);
+            return;
+        }
+        this._doFinishTurn();
+    }
+
+    _doFinishTurn() {
         this.isProcessing = false;
         const player = this.player;
         const remaining = this.maxMonths - player.month + 1;
