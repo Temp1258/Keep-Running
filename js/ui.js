@@ -35,7 +35,8 @@ const UI = {
             frugal: '节俭：可选消费减半',
             learner: '学者：学习奖励翻倍',
             techie: '技术：科技投资+20%',
-            connected: '人脉：社交带来投资机会'
+            connected: '人脉：社交带来投资机会',
+            hustler: '副业达人：兼职收入翻倍'
         };
         const list = document.getElementById('career-list');
         list.innerHTML = CAREERS.map(career => `
