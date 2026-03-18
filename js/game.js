@@ -1758,11 +1758,14 @@ class Game {
                 handler: () => {
                     player.actionsUsedThisMonth++;
                     player.actionUsedThisMonth = true;
-                    const baseIncome = Math.round(player.salary * 0.15);
+                    let baseIncome = Math.round(player.salary * 0.15);
+                    // 副业达人特性：兼职收入翻倍
+                    if (player.specialTrait === 'hustler') baseIncome *= 2;
                     const income = baseIncome + Math.floor(Math.random() * baseIncome * 0.5);
                     player.receiveIncome(income);
                     player.adjustSatisfaction(-3);
-                    UI.addMessage(`兼职赚了 ¥${income.toLocaleString()}（满意度-3，太累了）`, 'income');
+                    const traitNote = player.specialTrait === 'hustler' ? '（副业达人：收入翻倍！）' : '';
+                    UI.addMessage(`兼职赚了 ¥${income.toLocaleString()}（满意度-3）${traitNote}`, 'income');
                     UI.updateFinancePanel(player, this.maxMonths);
                 }
             },
