@@ -105,6 +105,11 @@
             if (window.game) window.game.cyclePaySelfRate();
         });
 
+        // V7: 快捷主动行动按钮
+        document.getElementById('btn-action-quick').addEventListener('click', () => {
+            if (window.game && !window.game.isProcessing) window.game.showActionMenu();
+        });
+
         // 退出
         document.getElementById('btn-quit').addEventListener('click', () => {
             if (confirm('确定要退出吗？未保存的进度将丢失。')) {
@@ -122,14 +127,30 @@
 
         // 键盘快捷键
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && window.game && !window.game.isProcessing) {
+            if (!window.game || !document.getElementById('screen-game').classList.contains('active')) return;
+            const modalHidden = document.getElementById('modal-overlay').classList.contains('hidden');
+            const gameoverHidden = document.getElementById('modal-gameover').classList.contains('hidden');
+
+            if (e.key === 'Enter' && !window.game.isProcessing && modalHidden && gameoverHidden) {
                 const btn = document.getElementById('btn-next-month');
-                if (!btn.disabled && document.getElementById('screen-game').classList.contains('active')
-                    && document.getElementById('modal-overlay').classList.contains('hidden')
-                    && document.getElementById('modal-gameover').classList.contains('hidden')) {
+                if (!btn.disabled) {
                     btn.disabled = true;
                     window.game.nextMonth();
                 }
+            }
+
+            // Space 键打开主动行动菜单
+            if (e.key === ' ' && !window.game.isProcessing && modalHidden && gameoverHidden) {
+                e.preventDefault();
+                const player = window.game.player;
+                if (player.actionsPerMonth - player.actionsUsedThisMonth > 0) {
+                    window.game.showActionMenu();
+                }
+            }
+
+            // Escape 关闭弹窗
+            if (e.key === 'Escape' && !modalHidden) {
+                document.getElementById('modal-overlay').classList.add('hidden');
             }
         });
     }

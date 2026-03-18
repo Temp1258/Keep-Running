@@ -1529,50 +1529,34 @@ class Game {
         }, remainActions);
     }
 
-    /** V6: 贷款面板 */
+    /** V7: 增强版贷款面板 */
     showLoanPanel() {
         const player = this.player;
         const maxLoan = player.getAvailableLoanAmount();
         const annualRate = Math.max(0.03, 0.08 - (player.creditScore - 600) * 0.0002);
 
-        const loanOptions = [
-            { amount: Math.min(10000, maxLoan), term: 12, label: '小额短贷' },
-            { amount: Math.min(30000, maxLoan), term: 24, label: '中额贷款' },
-            { amount: Math.min(50000, maxLoan), term: 36, label: '大额贷款' },
-            { amount: Math.min(maxLoan, 100000), term: 48, label: '大额长贷' }
-        ].filter(o => o.amount > 0);
-
-        const actions = loanOptions.map(opt => {
+        const calcMonthly = (amount, term) => {
             const monthlyRate = annualRate / 12;
-            const monthly = Math.round(opt.amount * monthlyRate * Math.pow(1 + monthlyRate, opt.term) / (Math.pow(1 + monthlyRate, opt.term) - 1));
-            const totalRepay = monthly * opt.term;
-            const totalInterest = totalRepay - opt.amount;
-            return {
-                label: `${opt.label}: ¥${opt.amount.toLocaleString()} / ${opt.term}月`,
-                class: 'btn-primary',
-                handler: () => {
-                    const loan = player.takeLoan(opt.amount, opt.term);
-                    if (loan) {
-                        UI.addMessage(`贷款成功！获得 ¥${opt.amount.toLocaleString()}，月供 ¥${loan.monthly}（${opt.term}月）`, 'info');
-                        UI.addMessage(`年利率 ${(annualRate * 100).toFixed(1)}%，总利息 ¥${totalInterest.toLocaleString()}`, 'warning');
-                        UI.updateFinancePanel(player, this.maxMonths);
-                    }
-                }
-            };
-        });
-
-        actions.push({
-            label: '取消', class: 'btn-secondary',
-            handler: () => {}
-        });
-
-        const card = {
-            title: '银行贷款',
-            description: `你的信用评分: ${player.creditScore} 分\n可贷额度: ¥${maxLoan.toLocaleString()}\n参考年利率: ${(annualRate * 100).toFixed(1)}%`,
-            tip: '贷款是双刃剑。用来购买资产产生正现金流是"好负债"，用来消费是"坏负债"。利率取决于信用评分。'
+            return Math.round(amount * monthlyRate * Math.pow(1 + monthlyRate, term) / (Math.pow(1 + monthlyRate, term) - 1));
         };
 
-        UI.showCard('opportunity', card, actions, `现有贷款: ${player.personalLoans.length}笔 | 信用分: ${player.creditScore}`);
+        UI.showLoanPanel({
+            creditScore: player.creditScore,
+            annualRate,
+            maxLoan,
+            existingLoans: player.personalLoans,
+            calcMonthly
+        }, (amount, term) => {
+            player.actionsUsedThisMonth++;
+            player.actionUsedThisMonth = true;
+            const loan = player.takeLoan(amount, term);
+            if (loan) {
+                const totalInterest = loan.monthly * term - amount;
+                UI.addMessage(`贷款成功！获得 ¥${amount.toLocaleString()}，月供 ¥${loan.monthly}（${term}月）`, 'info');
+                UI.addMessage(`年利率 ${(annualRate * 100).toFixed(1)}%，总利息 ¥${totalInterest.toLocaleString()}`, 'warning');
+                UI.updateFinancePanel(player, this.maxMonths);
+            }
+        });
     }
 
     /** 获取当前象限进化条件文本 */
@@ -1653,26 +1637,20 @@ class Game {
         const quadHtml = player.quadrant !== 'I' ? `<p style="color:var(--color-text-dim);font-size:12px;margin-top:8px;max-width:400px;margin-left:auto;margin-right:auto">${quadCondition}</p>` : '';
 
         const remainActions = player.actionsPerMonth - player.actionsUsedThisMonth;
-        const actionBtnHtml = remainActions > 0 ?
-            `<button id="btn-action-menu" class="btn btn-action-main" style="margin-top:16px">🎯 执行主动行动 (剩余${remainActions}次)</button>` :
-            `<p style="color:var(--color-text-dim);font-size:12px;margin-top:12px">本月行动次数已用完</p>`;
+        const actionStatusHtml = remainActions > 0 ?
+            `<p style="color:var(--color-gold);font-size:14px;margin-top:8px">剩余 ${remainActions} 次主动行动（按 Space 或点击下方按钮）</p>` :
+            `<p style="color:var(--color-text-dim);font-size:12px;margin-top:8px">本月行动次数已用完</p>`;
 
         UI.setEventArea(`
             <div style="text-align:center">
                 <p style="font-size:16px;margin-bottom:8px">第 ${player.month} 月 / 共 ${this.maxMonths} 月</p>
-                <p style="color:var(--color-text-dim)">点击下方按钮进入下个月，或先执行一次主动行动</p>
+                <p style="color:var(--color-text-dim)">按 Enter 进入下个月</p>
                 ${phaseWarning}
                 ${clarityHtml}
-                ${actionBtnHtml}
+                ${actionStatusHtml}
                 ${quadHtml}
             </div>
         `);
-
-        // 绑定主动行动按钮
-        const actionBtn = document.getElementById('btn-action-menu');
-        if (actionBtn) {
-            actionBtn.addEventListener('click', () => this.showActionMenu());
-        }
 
         document.getElementById('btn-next-month').disabled = false;
     }

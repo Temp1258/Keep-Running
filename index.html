@@ -104,11 +104,22 @@
                 </div>
                 <div class="tutorial-section">
                     <h3>多重行动</h3>
-                    <p>每月你有<strong>2次主动行动</strong>机会：搜索投资、自修课程、社交聚会、申请贷款、兼职打工、休息调整、市场调研。合理分配行动次数，最大化每月收益！</p>
+                    <p>每月你有<strong>2次主动行动</strong>机会，可从以下7种行动中选择：</p>
+                    <p>🔍 <strong>搜索投资</strong> - 主动寻找投资机会<br>
+                    📖 <strong>自修课程</strong> - 花¥500学习，可能获得答题机会<br>
+                    🤝 <strong>社交聚会</strong> - 花¥800恢复满意度+8和社交资本+10<br>
+                    🏦 <strong>申请贷款</strong> - 根据信用评分获取资金<br>
+                    💪 <strong>兼职打工</strong> - 获得约15%月薪的额外收入<br>
+                    🧘 <strong>休息调整</strong> - 恢复满意度+12<br>
+                    📊 <strong>市场调研</strong> - 花¥300，下月事件卡多一个选择</p>
+                </div>
+                <div class="tutorial-section">
+                    <h3>信用评分</h3>
+                    <p><strong>信用评分</strong>范围300-850分，初始600分。评分越高，<strong>贷款利率越低</strong>（850分=3%，600分=8%）。按时还贷+10~15分，逾期-50分。善用信用杠杆购买正现金流资产是加速财务自由的关键。</p>
                 </div>
                 <div class="tutorial-section">
                     <h3>小贴士</h3>
-                    <p>记住富爸爸的教诲：富人买入资产，穷人和中产买入自以为是资产的负债。</p>
+                    <p>记住富爸爸的教诲：富人买入资产，穷人和中产买入自以为是资产的负债。关注<strong>净现金流</strong>而非总价，利用<strong>好负债</strong>撬动资产增长。</p>
                 </div>
             </div>
             <button id="btn-back-from-tutorial" class="btn btn-primary">返回主菜单</button>
@@ -147,6 +158,7 @@
                 <span id="financial-iq" class="header-badge iq-badge" title="财商等级">IQ:0</span>
                 <span id="social-capital" class="header-badge" title="社交资本" style="color:var(--color-income)">社:50</span>
                 <span id="protection-level" class="header-badge prot-badge" title="保护等级" style="display:none">护:0</span>
+                <span id="credit-score" class="header-badge credit-badge" title="信用评分（影响贷款利率）">信:600</span>
             </div>
             <div class="header-right">
                 <span id="reserve-display" class="reserve-display" title="投资准备金">储备:¥0</span>
@@ -185,6 +197,11 @@
                     <span>月现金流</span>
                     <span id="monthly-cashflow" class="cashflow-value">¥0</span>
                 </div>
+                <div class="networth-trend" id="networth-trend">
+                    <span>净资产</span>
+                    <span id="networth-value">¥0</span>
+                    <span id="networth-change" class="trend-flat">--</span>
+                </div>
                 <div class="finance-section">
                     <div class="section-header asset-header">
                         <span>资产</span>
@@ -219,10 +236,13 @@
                     <div class="event-placeholder"><p>点击下方按钮开始新的一个月</p></div>
                 </div>
                 <div class="action-bar">
-                    <button id="btn-next-month" class="btn btn-primary btn-large">进入下个月</button>
+                    <div class="action-bar-row">
+                        <button id="btn-action-quick" class="btn btn-action-quick" style="display:none">🎯 主动行动 <span id="action-remain-badge" class="action-remain-badge">2</span></button>
+                        <button id="btn-next-month" class="btn btn-primary btn-large">进入下个月</button>
+                    </div>
                 </div>
                 <div class="message-log">
-                    <h4>消息记录</h4>
+                    <h4>消息记录 <span class="shortcut-hints">快捷键: Enter=下月 | Space=行动 | Esc=关闭</span></h4>
                     <div id="message-list" class="message-list"></div>
                 </div>
             </div>

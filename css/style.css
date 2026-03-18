@@ -222,7 +222,8 @@ body {
     flex-shrink: 0; max-height: 180px; overflow-y: auto;
     background: var(--color-surface); border-radius: var(--radius); padding: 12px;
 }
-.message-log h4 { font-size: 13px; color: var(--color-text-dim); margin-bottom: 8px; }
+.message-log h4 { font-size: 13px; color: var(--color-text-dim); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.shortcut-hints { font-size: 10px; color: var(--color-border); font-weight: 400; }
 .message-list { font-size: 13px; }
 .message-item { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--color-text-dim); line-height: 1.5; }
 .message-item:last-child { border-bottom: none; }
@@ -591,20 +592,209 @@ body {
     line-height: 1.5;
 }
 
+/* ===================================================================
+   V7 新增样式
+   =================================================================== */
+
+/* === 信用评分badge === */
+.credit-badge {
+    color: var(--color-gold);
+    border-color: rgba(255,213,79,0.3);
+}
+
+/* === 快捷行动按钮 === */
+.action-bar-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+.btn-action-quick {
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(255,213,79,0.15) 0%, rgba(102,187,106,0.15) 100%);
+    color: var(--color-gold);
+    border: 1px solid rgba(255,213,79,0.3);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-action-quick:hover {
+    background: linear-gradient(135deg, rgba(255,213,79,0.3) 0%, rgba(102,187,106,0.3) 100%);
+    border-color: var(--color-gold);
+    transform: translateY(-1px);
+}
+.action-remain-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--color-gold);
+    color: var(--color-bg);
+    font-size: 12px;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+/* === 净资产趋势指示器 === */
+.networth-trend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--color-bg);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+.trend-arrow-up { color: var(--color-income); font-weight: 700; }
+.trend-arrow-down { color: var(--color-expense); font-weight: 700; }
+.trend-flat { color: var(--color-text-dim); }
+
+/* === 月度收入动画 === */
+.income-flash {
+    animation: incomeFlash 0.6s ease;
+}
+@keyframes incomeFlash {
+    0% { background-color: transparent; }
+    30% { background-color: rgba(102,187,106,0.15); }
+    100% { background-color: transparent; }
+}
+
+/* === 贷款面板增强 === */
+.loan-input-group {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0;
+    align-items: center;
+}
+.loan-input-group input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 14px;
+    outline: none;
+}
+.loan-input-group input:focus {
+    border-color: var(--color-primary);
+}
+.loan-input-group input[type="range"] {
+    -webkit-appearance: none;
+    height: 6px;
+    background: var(--color-border);
+    border-radius: 3px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+.loan-input-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    border: 2px solid var(--color-bg);
+}
+.loan-input-group input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    border: 2px solid var(--color-bg);
+}
+.loan-input-group select {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+.loan-preview {
+    padding: 10px 14px;
+    background: var(--color-bg);
+    border-radius: var(--radius);
+    font-size: 13px;
+    line-height: 1.8;
+    margin-bottom: 12px;
+    border: 1px solid var(--color-border);
+}
+.loan-preview .highlight { color: var(--color-gold); font-weight: 600; }
+
+/* === 个人贷款列表样式 === */
+.personal-loan-item {
+    font-size: 12px;
+    color: var(--color-text-dim);
+    padding: 2px 8px 2px 16px;
+    display: flex;
+    justify-content: space-between;
+}
+.loan-progress-mini {
+    display: inline-block;
+    width: 40px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+.loan-progress-mini-fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 2px;
+}
+
 /* === 响应式 === */
 @media (max-width: 800px) {
     .game-body { flex-direction: column; }
     .panel-finance { width: 100%; min-width: unset; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--color-border); }
-    .career-list { grid-template-columns: 1fr; }
+    .career-list { grid-template-columns: 1fr 1fr; }
     .game-title { font-size: 42px; }
-    .header-left, .header-right { gap: 8px; }
-    .header-center { display: none; }
+    .game-header { padding: 8px 12px; flex-wrap: wrap; gap: 6px; }
+    .header-left, .header-right { gap: 6px; }
+    .header-center { gap: 6px; font-size: 10px; }
+    .header-badge { font-size: 10px; padding: 1px 5px; }
     .career-display { display: none; }
     .modal-card { padding: 20px; margin: 10px; }
-    .stats-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
     .reserve-display { display: none; }
     .quadrant-indicator .quad-arrow { display: none; }
     .cashflow-diagram { padding: 8px; }
     .flow-box { font-size: 10px; padding: 3px 6px; }
     .gameover-stats { grid-template-columns: 1fr 1fr; }
+    .action-bar-row { flex-direction: column; }
+    .btn-action-quick { font-size: 14px; padding: 10px 16px; }
+    .btn-small { padding: 4px 10px; font-size: 12px; }
+    .loan-input-group { flex-direction: column; }
+    .card-actions { flex-wrap: wrap; }
+    .card-actions .btn { flex: 1 1 45%; min-width: 120px; }
+}
+
+@media (max-width: 480px) {
+    .game-header { padding: 6px 8px; }
+    .header-left, .header-right { gap: 4px; }
+    .header-center { display: none; }
+    .career-list { grid-template-columns: 1fr; }
+    .game-title { font-size: 32px; }
+    .panel-finance { max-height: 35vh; padding: 10px; }
+    .panel-event { padding: 10px 12px; }
+    .message-log { max-height: 120px; }
+    .section-header { font-size: 12px; padding: 6px 8px; }
+    .finance-item { font-size: 12px; padding: 3px 4px; }
+    .month-display { font-size: 14px; }
+    .cash-display { font-size: 14px; }
+    .modal-card { padding: 16px; max-height: 85vh; }
+    .card-title { font-size: 18px; }
 }
