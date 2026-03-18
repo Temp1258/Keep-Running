@@ -440,6 +440,9 @@ class Game {
             case 'fomo': this.handleFOMO(card); break;
             case 'social': this.handleSocial(card); break;
             case 'interaction': this.handleAssetInteraction(card); break;
+            case 'loan': this.handleLoanEvent(card); break;
+            case 'career': this.handleCareerEvent(card); break;
+            case 'windfall': this.handleWindfall(card); break;
             default: this.finishTurn();
         }
     }
@@ -726,6 +729,28 @@ class Game {
 
     /** 处理市场波动 */
     handleMarket(card) {
+        // 通胀飙升特殊处理
+        if (card.inflationEffect) {
+            UI.showCard('market', card, [{
+                label: '知道了', class: 'btn-danger',
+                handler: () => {
+                    const player = this.player;
+                    // 支出增加
+                    const expIncrease = player.applyInflation(card.inflationEffect.expenseIncrease);
+                    UI.addMessage(`物价飞涨！月支出增加 ¥${expIncrease}`, 'expense');
+                    // 资产增值
+                    if (player.assets.length > 0) {
+                        player.updateAssetValues('realestate', 1 + card.inflationEffect.assetIncrease);
+                        player.updateAssetValues('business', 1 + card.inflationEffect.assetIncrease);
+                        UI.addMessage(`资产价值上涨 ${Math.round(card.inflationEffect.assetIncrease * 100)}%`, 'income');
+                    }
+                    UI.updateFinancePanel(player, this.maxMonths);
+                    this.finishTurn();
+                }
+            }]);
+            return;
+        }
+
         if (card.rateChange !== undefined) {
             UI.showCard('market', card, [{
                 label: '知道了', class: 'btn-primary',
@@ -1234,6 +1259,251 @@ class Game {
         }));
 
         UI.showCard('interaction', card, actions);
+    }
+
+    // ==============================
+    // V6: 贷款事件处理
+    // ==============================
+
+    handleLoanEvent(card) {
+        const player = this.player;
+
+        switch (card.effect) {
+            case 'reduce_loan_payment': {
+                UI.showCard('loan', card, [{
+                    label: '好消息！', class: 'btn-success',
+                    handler: () => {
+                        player.liabilities.forEach(l => {
+                            const diff = Math.round(l.monthly * (1 - card.multiplier));
+                            l.monthly = Math.round(l.monthly * card.multiplier);
+                            const exp = player.expenses.find(e => e.amount && !e.inflatable && e.name.includes('月供'));
+                            if (exp) exp.amount = l.monthly;
+                        });
+                        UI.addMessage(`${card.title}！月供减少了`, 'income');
+                        UI.updateFinancePanel(player, this.maxMonths);
+                        this.finishTurn();
+                    }
+                }]);
+                break;
+            }
+            case 'pay_fine': {
+                UI.showCard('loan', card, [{
+                    label: `支付 -¥${card.amount.toLocaleString()}`, class: 'btn-danger',
+                    handler: () => {
+                        player.payExpense(card.amount);
+                        if (card.creditScoreDelta) {
+                            player.creditScore = Math.max(350, player.creditScore + card.creditScoreDelta);
+                            UI.addMessage(`信用评分 ${card.creditScoreDelta > 0 ? '+' : ''}${card.creditScoreDelta}`, card.creditScoreDelta > 0 ? 'income' : 'expense');
+                        }
+                        UI.addMessage(`${card.title}，支付 ¥${card.amount.toLocaleString()}`, 'expense');
+                        UI.updateFinancePanel(player, this.maxMonths);
+                        this.checkBankrupt() || this.finishTurn();
+                    }
+                }]);
+                break;
+            }
+            case 'credit_boost': {
+                UI.showCard('loan', card, [{
+                    label: '好消息！', class: 'btn-success',
+                    handler: () => {
+                        player.creditScore = Math.min(950, player.creditScore + card.creditScoreDelta);
+                        player.maxLoanAmount = Math.round(player.maxLoanAmount * 1.1);
+                        UI.addMessage(`${card.title}！信用评分 +${card.creditScoreDelta}，贷款额度提升`, 'income');
+                        UI.updateFinancePanel(player, this.maxMonths);
+                        this.finishTurn();
+                    }
+                }]);
+                break;
+            }
+            case 'refinance': {
+                if (player.liabilities.length === 0) { this.finishTurn(); return; }
+                UI.showCard('loan', card, [
+                    {
+                        label: '接受重组', class: 'btn-primary',
+                        handler: () => {
+                            player.liabilities.forEach(l => {
+                                l.monthly = Math.round(l.monthly * card.monthlyReduction);
+                                l.total = Math.round(l.total * card.termExtension);
+                            });
+                            UI.addMessage(`贷款重组完成：月供降低，但总还款增加`, 'warning');
+                            UI.updateFinancePanel(player, this.maxMonths);
+                            this.finishTurn();
+                        }
+                    },
+                    {
+                        label: '保持原计划', class: 'btn-secondary',
+                        handler: () => { this.finishTurn(); }
+                    }
+                ]);
+                break;
+            }
+            case 'early_repay_discount': {
+                if (player.liabilities.length === 0) { this.finishTurn(); return; }
+                const smallest = player.liabilities.reduce((min, l) => l.total < min.total ? l : min, player.liabilities[0]);
+                const discountedAmount = Math.round(smallest.total * (1 - card.discount));
+                const canAfford = player.cash >= discountedAmount;
+                UI.showCard('loan', card, [
+                    {
+                        label: canAfford ? `提前还清 ${smallest.name} (-¥${discountedAmount.toLocaleString()})` : '现金不足',
+                        class: 'btn-success', disabled: !canAfford,
+                        handler: () => {
+                            player.payExpense(discountedAmount);
+                            const liabIdx = player.liabilities.indexOf(smallest);
+                            if (liabIdx !== -1) {
+                                const liab = player.liabilities[liabIdx];
+                                if (liab.linkedId) {
+                                    const expIdx = player.expenses.findIndex(e => e.linkedId === liab.linkedId);
+                                    if (expIdx !== -1) player.expenses.splice(expIdx, 1);
+                                } else {
+                                    const expIdx = player.expenses.findIndex(e => e.amount === liab.monthly && !e.inflatable);
+                                    if (expIdx !== -1) player.expenses.splice(expIdx, 1);
+                                }
+                                player.liabilities.splice(liabIdx, 1);
+                            }
+                            UI.addMessage(`提前还清 ${smallest.name}！节省 ¥${Math.round(smallest.total * card.discount).toLocaleString()} 利息`, 'income');
+                            UI.updateFinancePanel(player, this.maxMonths);
+                            this.finishTurn();
+                        }
+                    },
+                    {
+                        label: '放弃', class: 'btn-secondary',
+                        handler: () => { this.finishTurn(); }
+                    }
+                ]);
+                break;
+            }
+            default:
+                this.finishTurn();
+        }
+    }
+
+    // ==============================
+    // V6: 职业事件处理
+    // ==============================
+
+    handleCareerEvent(card) {
+        const player = this.player;
+
+        // 只在E象限生效（有工作的人）
+        if (player.quadrant !== 'E') {
+            UI.addMessage(`你已经不是打工人了，职场事件不影响你`, 'info');
+            this.finishTurn();
+            return;
+        }
+
+        switch (card.effect) {
+            case 'salary_change': {
+                const newSalary = Math.round(player.salary * card.multiplier);
+                const diff = newSalary - player.salary;
+                const satDelta = card.satisfactionDelta || 0;
+                UI.showCard('career', card, [{
+                    label: diff > 0 ? '太好了！' : '接受现实',
+                    class: diff > 0 ? 'btn-success' : 'btn-danger',
+                    handler: () => {
+                        player.salary = newSalary;
+                        if (satDelta) player.adjustSatisfaction(satDelta);
+                        const dir = diff > 0 ? '+' : '';
+                        UI.addMessage(`${card.title}！月薪 ${dir}¥${diff.toLocaleString()}${satDelta ? `（满意度${satDelta > 0 ? '+' : ''}${satDelta}）` : ''}`, diff > 0 ? 'income' : 'expense');
+                        UI.updateFinancePanel(player, this.maxMonths);
+                        this.finishTurn();
+                    }
+                }]);
+                break;
+            }
+            case 'satisfaction_change': {
+                UI.showCard('career', card, [{
+                    label: '知道了', class: 'btn-primary',
+                    handler: () => {
+                        player.adjustSatisfaction(card.delta);
+                        UI.addMessage(`${card.title}（满意度${card.delta > 0 ? '+' : ''}${card.delta}）`, 'warning');
+                        UI.updateFinancePanel(player, this.maxMonths);
+                        this.finishTurn();
+                    }
+                }]);
+                break;
+            }
+            case 'cash_bonus': {
+                UI.showCard('career', card, [{
+                    label: `收下 +¥${card.amount.toLocaleString()}`, class: 'btn-success',
+                    handler: () => {
+                        player.receiveIncome(card.amount);
+                        UI.addMessage(`${card.title}！+¥${card.amount.toLocaleString()}`, 'income');
+                        UI.updateFinancePanel(player, this.maxMonths);
+                        this.finishTurn();
+                    }
+                }]);
+                break;
+            }
+            case 'job_offer': {
+                const newSalary = Math.round(player.salary * card.salaryMultiplier);
+                const diff = newSalary - player.salary;
+                const canAfford = player.cash >= card.movingCost;
+                UI.showCard('career', card, [
+                    {
+                        label: canAfford ? `接受（搬家费¥${card.movingCost.toLocaleString()}，月薪+¥${diff.toLocaleString()}）` : '搬家费不够',
+                        class: 'btn-success', disabled: !canAfford,
+                        handler: () => {
+                            player.payExpense(card.movingCost);
+                            player.salary = newSalary;
+                            player.adjustSatisfaction(-5); // 搬家压力
+                            player.adjustSocialCapital(-15); // 离开社交圈
+                            UI.addMessage(`跳槽成功！月薪 +¥${diff.toLocaleString()}，但搬家花了¥${card.movingCost.toLocaleString()}（社交资本-15）`, 'income');
+                            UI.updateFinancePanel(player, this.maxMonths);
+                            this.finishTurn();
+                        }
+                    },
+                    {
+                        label: '留在现公司', class: 'btn-secondary',
+                        handler: () => {
+                            UI.addMessage(`拒绝了高薪offer，留在熟悉的环境`, 'info');
+                            this.finishTurn();
+                        }
+                    }
+                ]);
+                break;
+            }
+            case 'skill_up': {
+                UI.showCard('career', card, [{
+                    label: '参加培训', class: 'btn-success',
+                    handler: () => {
+                        player.adjustSatisfaction(5);
+                        player.adjustSocialCapital(5);
+                        // 小概率加薪效果
+                        if (Math.random() < 0.3) {
+                            const raise = Math.round(player.salary * 0.05);
+                            player.salary += raise;
+                            UI.addMessage(`培训后获得认可，月薪 +¥${raise.toLocaleString()}！`, 'income');
+                        } else {
+                            UI.addMessage(`完成培训，能力提升（满意度+5，社交资本+5）`, 'info');
+                        }
+                        UI.updateFinancePanel(player, this.maxMonths);
+                        this.finishTurn();
+                    }
+                }]);
+                break;
+            }
+            default:
+                this.finishTurn();
+        }
+    }
+
+    // ==============================
+    // V6: 意外之财事件处理
+    // ==============================
+
+    handleWindfall(card) {
+        const player = this.player;
+
+        UI.showCard('windfall', card, [{
+            label: `收下 +¥${card.amount.toLocaleString()}`, class: 'btn-success',
+            handler: () => {
+                player.receiveIncome(card.amount);
+                UI.addMessage(`${card.title}！+¥${card.amount.toLocaleString()}`, 'income');
+                UI.updateFinancePanel(player, this.maxMonths);
+                this.checkAchievements();
+                this.finishTurn();
+            }
+        }]);
     }
 
     // ==============================

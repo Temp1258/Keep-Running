@@ -489,11 +489,11 @@ const CARDS = {
         },
         {
             id: 'new_car_tempt', title: '买新车诱惑',
-            description: '4S店推出了超低首付购车活动。一辆漂亮的新车只需首付2万，但每月要还1500的车贷。',
+            description: '4S店推出超低首付购车活动。一辆¥15万的新车只需首付2万，剩下13万贷款分期。每月还¥1,500，还8年多。',
             amount: 20000, optional: true,
             addExpense: { name: '新车贷月供', amount: 1500 },
-            addLiability: { name: '新车贷', total: 150000, monthly: 1500 },
-            tip: '富爸爸说：车是负债不是资产！它每个月都从你口袋拿钱——油费、保险、折旧、贷款月供。'
+            addLiability: { name: '新车贷', total: 130000, monthly: 1500 },
+            tip: '富爸爸说：车是负债不是资产！首付2万+总还款¥1500×100月=¥150,000+利息。车到手就贬值，每月还在掏油费保险。'
         },
         {
             id: 'tax_bill', title: '补缴税款',
@@ -515,9 +515,9 @@ const CARDS = {
         },
         {
             id: 'scam_investment', title: '"稳赚不赔"的项目',
-            description: '同事神秘兮兮地拉你投资一个"内部项目"，说保证翻倍。你投吗？',
-            amount: 8000, optional: true,
-            tip: '记住：任何号称"稳赚不赔"的投资都是骗局。高回报必然伴随高风险，而骗局只有高风险没有回报。'
+            description: '同事神秘兮兮地拉你投资一个"内部项目"，说年化收益50%，保证翻倍。你投吗？',
+            amount: 15000, optional: true,
+            tip: '记住：任何号称"稳赚不赔"、承诺超高回报的投资都是骗局。正规投资年化5-15%已经很好了。'
         },
         {
             id: 'shopping_spree', title: '双十一大促',
@@ -527,16 +527,17 @@ const CARDS = {
         },
         {
             id: 'travel_tempt', title: '旅游诱惑',
-            description: '同事们组织了一次出国旅游，费用不菲但听起来很吸引人。',
-            amount: 4000, optional: true,
+            description: '同事们组织了一次出国旅游，东南亚7天，费用不菲但听起来很吸引人。',
+            amount: 8000, optional: true,
+            satisfactionRestore: 15,
             tip: '延迟满足是富人的核心习惯之一。现在把旅游费投资出去，未来可以用被动收入去旅游。'
         },
         {
-            id: 'rent_increase', title: '房东涨房租',
-            description: '房东通知你下个月开始涨租金，每月多付200元。',
+            id: 'cost_of_living_up', title: '生活成本上涨',
+            description: '小区物业费调整，加上日常消费品涨价，每月固定支出增加了200元。',
             amount: 0,
-            addExpenseOnly: { name: '房租上涨', amount: 200, inflatable: true },
-            tip: '租房者永远在为房东的资产买单。这也是为什么富爸爸建议拥有能产生收入的房产。'
+            addExpenseOnly: { name: '生活成本上涨', amount: 200, inflatable: true },
+            tip: '生活成本会随时间缓慢上涨。这也是为什么仅靠固定工资很危险——你的支出在增长，但工资未必跟得上。'
         },
         {
             id: 'insurance_offer', title: '保险推销',
@@ -546,12 +547,12 @@ const CARDS = {
         },
         {
             id: 'credit_card_tempt', title: '信用卡分期诱惑',
-            description: '银行打电话说可以给你¥10000的信用卡分期额度，每月只需还¥800。听起来很"轻松"。',
+            description: '银行打电话说可以给你¥10,000的信用卡分期额度，分18期每月只需还¥680。听起来很"轻松"。',
             amount: 0, optional: true,
             cashGain: 10000,
-            addExpense: { name: '信用卡分期', amount: 800 },
-            addLiability: { name: '信用卡分期', total: 14400, monthly: 800 },
-            tip: '信用卡分期是最常见的负债陷阱。看似每月只还¥800，但总共要还¥14400——多付了44%的利息！'
+            addExpense: { name: '信用卡分期', amount: 680 },
+            addLiability: { name: '信用卡分期', total: 12240, monthly: 680 },
+            tip: '信用卡分期的真实年化利率约15-18%。看似每月只还¥680，18个月总还¥12,240——多付了22%！'
         },
         // === V6: 新增额外支出事件 ===
         {
@@ -623,31 +624,31 @@ const CARDS = {
         },
         {
             id: 'subscription_trap', title: '订阅陷阱',
-            description: '清理账户时发现你有5个已经不用的订阅服务，每月扣款。要继续还是取消？',
-            amount: 0, optional: true,
+            description: '清理账户时发现你有5个已经不用的订阅服务，每月扣款¥150。如果不取消，这笔钱会一直扣下去。',
+            amount: 0,
             addExpenseOnly: { name: '订阅服务', amount: 150, inflatable: false },
-            tip: '订阅经济的陷阱：单个不贵但积少成多。定期检查所有自动扣费项目。'
+            tip: '订阅经济的陷阱：单个不贵但积少成多。定期检查所有自动扣费项目。取消它们！'
         },
         {
             id: 'education_loan', title: '孩子出国留学',
-            description: '孩子拿到了国外大学offer，首年费用需要一大笔钱。',
-            amount: 15000, optional: true,
-            addExpense: { name: '留学费用', amount: 800 },
-            addLiability: { name: '教育贷', total: 50000, monthly: 800 },
+            description: '孩子拿到了国外大学offer，首年学费加生活费需要一大笔钱。',
+            amount: 80000, optional: true,
+            addExpense: { name: '留学费用', amount: 3000 },
+            addLiability: { name: '教育贷', total: 200000, monthly: 3000 },
             tip: '教育是最好的投资——但也要考虑投资回报。留学是投资还是消费，取决于之后的发展。'
         },
         {
             id: 'elderly_care', title: '养老护理费',
             description: '父母年纪大了，需要请护工照顾，每月增加固定支出。',
             amount: 0,
-            addExpenseOnly: { name: '护工费用', amount: 500, inflatable: true },
-            tip: '老龄化时代，养老支出是每个家庭必须面对的课题。提早规划养老金。'
+            addExpenseOnly: { name: '护工费用', amount: 2000, inflatable: true },
+            tip: '老龄化时代，养老支出是每个家庭必须面对的课题。护工月薪¥4000-6000，你承担一半。'
         },
         {
             id: 'crypto_fomo', title: '加密货币热潮',
-            description: '朋友靠炒币赚了大钱，你心动了。要投入一笔试试吗？高风险！',
-            amount: 5000, optional: true,
-            tip: '加密货币波动极大。朋友赚钱的故事背后，有无数亏损的人沉默不语。'
+            description: '朋友靠炒币赚了大钱，你心动了。投¥10,000试试？50%概率翻倍，50%概率归零。',
+            amount: 10000, optional: true,
+            tip: '加密货币波动极大。50%归零的风险远比你想象的高。朋友赚钱的故事背后，有无数亏损的人沉默不语。'
         },
         {
             id: 'kid_illness', title: '孩子生病',
@@ -1736,9 +1737,10 @@ function drawCard(player) {
     if (player.month - player.lastSocialEventMonth >= 10 && Math.random() < 0.3) {
         player.lastSocialEventMonth = player.month;
         const socialEvents = [
-            { item: '新车', cost: 3000 },
+            { item: '新车', cost: 5000 },
             { item: '出国旅游', cost: 3000 },
-            { item: '大房子', cost: 3000 }
+            { item: '名牌包', cost: 4000 },
+            { item: '新款手机', cost: 2000 }
         ];
         const evt = socialEvents[Math.floor(Math.random() * socialEvents.length)];
         return {
@@ -1754,8 +1756,8 @@ function drawCard(player) {
         };
     }
 
-    // V6: 8%概率触发贷款事件（需有贷款）
-    if (player.loans && player.loans.length > 0 && Math.random() < 0.08) {
+    // V6: 8%概率触发贷款事件（需有贷款：包括初始负债和个人贷款）
+    if (player.liabilities && player.liabilities.length > 0 && Math.random() < 0.08) {
         const applicable = LOAN_EVENTS.filter(evt => {
             if (evt.triggerCondition === 'low_cash' && player.cash > 5000) return false;
             return true;
