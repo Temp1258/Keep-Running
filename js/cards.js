@@ -83,7 +83,7 @@ const CARDS = {
             liability: { name: '小户型房贷', total: 280000, monthly: 1800 },
             expense: { name: '小户型房贷月供', amount: 1800 },
             asset: { name: '出租小户型', type: 'realestate', cost: 350000, income: 1500 },
-            tip: '富爸爸说：房产是最好的资产之一——前提是它能带来正现金流。净现金流 = ¥1500 - ¥1800 = -¥300/月。注意：目前是负现金流！',
+            tip: '房产可以是优质资产——前提是它能带来正现金流。净现金流 = ¥1500 - ¥1800 = -¥300/月。注意：目前是负现金流！',
             unlockMonth: 13
         },
         {
@@ -103,7 +103,7 @@ const CARDS = {
             description: '一家盈利中的网店正在转让，品类稳定，客源成熟，每月有稳定利润。',
             cost: 30000, downPayment: 30000, monthlyIncome: 400,
             asset: { name: '网店', type: 'business', cost: 30000, income: 400 },
-            tip: '生意是富爸爸最推崇的资产类型。好的生意能在你不工作时也为你赚钱。',
+            tip: '生意是最具潜力的资产类型。好的生意能在你不工作时也为你赚钱。',
             unlockMonth: 13
         },
         {
@@ -338,7 +338,7 @@ const CARDS = {
             liability: { name: '扩张贷款', total: 300000, monthly: 2500 },
             expense: { name: '扩张贷月供', amount: 2500 },
             asset: { name: '区域代理权', type: 'business', cost: 500000, income: 6000 },
-            tip: '从单店到区域代理，这是B象限的终极进化。净现金流 = ¥6000 - ¥2500 = ¥3500/月。',
+            tip: '从单店到区域代理，这是企业规模化的终极进化。净现金流 = ¥6000 - ¥2500 = ¥3500/月。',
             unlockMonth: 100
         },
         {
@@ -370,7 +370,7 @@ const CARDS = {
             description: '一只知名创投基金向你开放了LP份额，投资早期科技公司。',
             cost: 500000, downPayment: 500000, monthlyIncome: 5000,
             asset: { name: '创投基金LP', type: 'fund', cost: 500000, income: 5000 },
-            tip: '创投是高风险高回报的I象限投资。只用你能承受损失的钱。',
+            tip: '创投是高风险高回报的专业投资。只用你能承受损失的钱。',
             unlockMonth: 130
         },
         {
@@ -392,7 +392,7 @@ const CARDS = {
             description: '你可以成立自己的工作室，接更多项目，但需要一笔启动资金。',
             cost: 20000, downPayment: 20000, monthlyIncome: 300,
             asset: { name: '个人工作室', type: 'business', cost: 20000, income: 300 },
-            tip: 'S象限的起点：用你的技能赚钱。但记住，你还是在用时间换钱。',
+            tip: '自雇的起点：用你的技能赚钱。但记住，你还是在用时间换钱。',
             unlockMonth: 1, requireQuadrant: 'S'
         },
         {
@@ -401,7 +401,7 @@ const CARDS = {
             description: '一个大客户需要你做一个长期外包项目，每月有稳定收入。',
             cost: 5000, downPayment: 5000, monthlyIncome: 250,
             asset: { name: '外包合同', type: 'business', cost: 5000, income: 250 },
-            tip: '外包收入是S象限的典型收入方式。稳定但有上限。',
+            tip: '外包收入是自雇者的典型收入方式。稳定但有上限。',
             unlockMonth: 1, requireQuadrant: 'S'
         },
 
@@ -412,7 +412,7 @@ const CARDS = {
             description: '你的生意需要扩张，招聘一个管理团队让业务系统化运作。投入后收入大幅提升。',
             cost: 50000, downPayment: 50000, monthlyIncome: 800,
             asset: { name: '管理团队', type: 'business', cost: 50000, income: 800 },
-            tip: 'B象限的核心：建立系统。你不再为钱工作，系统为你赚钱。',
+            tip: '企业主的核心：建立系统。你不再为钱工作，团队和流程为你创造价值。',
             unlockMonth: 1, requireQuadrant: 'B'
         },
         {
@@ -423,7 +423,7 @@ const CARDS = {
             liability: { name: '分店贷款', total: 50000, monthly: 500 },
             expense: { name: '分店贷月供', amount: 500 },
             asset: { name: '品牌分店', type: 'business', cost: 80000, income: 1000 },
-            tip: '规模化是B象限的核心策略。每开一家分店，你的系统就更强大。',
+            tip: '规模化是企业主的核心策略。每开一家分店，你的系统就更强大。',
             unlockMonth: 1, requireQuadrant: 'B'
         },
 
@@ -434,7 +434,7 @@ const CARDS = {
             description: '一个初创团队向你融资，项目前景不错。作为天使投资人，你可以获得股权分红。',
             cost: 100000, downPayment: 100000, monthlyIncome: 1500,
             asset: { name: '天使投资', type: 'stock', cost: 100000, income: 1500 },
-            tip: 'I象限的高阶玩法：用钱投资别人的梦想，获取股权回报。',
+            tip: '专业投资者的高阶玩法：用资本投资有潜力的项目，获取股权回报。',
             unlockMonth: 1, requireQuadrant: 'I'
         },
         {
@@ -445,7 +445,7 @@ const CARDS = {
             liability: { name: '并购贷款', total: 120000, monthly: 1500 },
             expense: { name: '并购贷月供', amount: 1500 },
             asset: { name: '收购企业', type: 'business', cost: 200000, income: 3000 },
-            tip: '企业并购是I象限投资者的利器。用钱买别人已经建好的系统。',
+            tip: '企业并购是专业投资者的利器。用资本买下别人已经建好的系统。',
             unlockMonth: 1, requireQuadrant: 'I'
         }
     ],
@@ -455,7 +455,7 @@ const CARDS = {
             id: 'car_repair', title: '汽车维修',
             description: '你的车突然抛锚了，需要支付一笔维修费用。',
             amount: 2000,
-            tip: '意外支出是人生常态。富爸爸建议：永远保留至少3个月支出的现金作为紧急备用金。'
+            tip: '意外支出是人生常态。理财建议：永远保留至少3个月支出的现金作为紧急备用金。'
         },
         {
             id: 'medical', title: '医疗费用',
@@ -467,7 +467,7 @@ const CARDS = {
             id: 'luxury_watch', title: '奢侈品诱惑',
             description: '商场打折，一块心仪已久的名表正在促销。你忍不住想买下来。要买吗？',
             amount: 5000, optional: true,
-            tip: '富爸爸说：穷人买奢侈品，富人最后才买奢侈品。你真的需要它吗？'
+            tip: '理财智慧：先建立资产，再享受奢侈。在资产还不够多的时候买奢侈品，是在消耗你的未来。'
         },
         {
             id: 'new_phone', title: '换新手机',
@@ -493,7 +493,7 @@ const CARDS = {
             amount: 20000, optional: true,
             addExpense: { name: '新车贷月供', amount: 1500 },
             addLiability: { name: '新车贷', total: 130000, monthly: 1500 },
-            tip: '富爸爸说：车是负债不是资产！首付2万+总还款¥1500×100月=¥150,000+利息。车到手就贬值，每月还在掏油费保险。'
+            tip: '车是典型的负债而非资产！首付2万+总还款¥1500×100月=¥150,000+利息。车到手就贬值，每月还在掏油费保险。'
         },
         {
             id: 'tax_bill', title: '补缴税款',
@@ -897,10 +897,10 @@ const CARDS = {
             explanation: '出租房在租金大于月供时，每月为你带来正现金流，所以是资产。自住房虽然有价值，但它每月让你付出月供，是负债。'
         },
         {
-            id: 'q2', question: '富爸爸认为，穷人和富人最大的区别是？',
+            id: 'q2', question: '穷人和富人在财务行为上最大的区别是？',
             options: ['学历高低', '收入多少', '对资产和负债的理解', '运气好坏'],
             answer: 2, reward: 1000,
-            explanation: '富爸爸认为：富人买入资产，穷人和中产阶级买入他们以为是资产的负债。关键不是收入多少，而是你如何使用你的收入。'
+            explanation: '财务研究表明：富人倾向于买入资产，而多数人买入了他们以为是资产的负债。关键不是收入多少，而是你如何使用你的收入。'
         },
         {
             id: 'q3', question: '什么是"被动收入"？',
@@ -918,19 +918,19 @@ const CARDS = {
             id: 'q5', question: '以下哪种行为最可能帮你走向财务自由？',
             options: ['加薪后提升生活品质', '把所有钱存银行', '用结余购买能产生被动收入的资产', '贷款买更大的房子自住'],
             answer: 2, reward: 1500,
-            explanation: '用结余购买资产，让资产为你工作，这是走向财务自由的核心路径。加薪后提升消费是"老鼠赛跑"的陷阱。'
+            explanation: '用结余购买资产，让资产为你工作，这是走向财务自由的核心路径。加薪后同步提升消费是"收支循环"的陷阱。'
         },
         {
-            id: 'q6', question: '"老鼠赛跑"是指什么？',
-            options: ['一种宠物比赛', '赚更多花更多的恶性循环', '股市的追涨杀跌', '创业竞争'],
+            id: 'q6', question: '"收支死循环"是指什么？',
+            options: ['一种经济术语', '赚更多花更多的恶性循环', '股市的追涨杀跌', '创业竞争'],
             answer: 1, reward: 1000,
-            explanation: '"老鼠赛跑"是指人们不断工作赚取更多收入，但同时增加更多支出，永远无法实现财务自由的状态。'
+            explanation: '"收支死循环"是指人们不断工作赚取更多收入，但同时增加更多支出，永远无法实现财务自由的状态。'
         },
         {
             id: 'q7', question: '一套月供3000元的自住房，对你来说是？',
             options: ['既是资产也是负债', '资产，因为房子会增值', '都不是', '负债，因为它每月从你口袋拿走3000元'],
             answer: 3, reward: 1500,
-            explanation: '按照富爸爸的定义，自住房是负债——它每月从你口袋里拿走钱（月供、维护费等），而不是放钱进来。'
+            explanation: '从现金流角度看，自住房是负债——它每月从你口袋里拿走钱（月供、维护费等），而不是放钱进来。'
         },
         {
             id: 'q8', question: '财务自由的定义是？',
@@ -984,7 +984,7 @@ const CARDS = {
             id: 'q16', question: '以下哪个是最有效的节税方式？',
             options: ['不赚钱就不用交税', '只拿现金', '逃税', '通过合法的资产结构降低税负'],
             answer: 3, reward: 1000,
-            explanation: '富人通过公司、房产折旧、合理的资产结构来合法降低税负。这就是为什么富爸爸说"税法是为了鼓励投资而设计的"。'
+            explanation: '聪明的投资者通过公司、房产折旧、合理的资产结构来合法降低税负。税法的设计本身就在鼓励投资和创业。'
         },
         // === V6: 新增学习题目 ===
         {
@@ -994,7 +994,7 @@ const CARDS = {
             explanation: '杠杆就是借助外力（通常是借款）来放大投资回报。用10万首付买50万的房子，就是5倍杠杆。收益放大，但风险也放大。'
         },
         {
-            id: 'q18', question: '以下哪个最接近"现金流象限"中B象限的特征？',
+            id: 'q18', question: '以下哪个最接近"收入象限"中B象限的特征？',
             options: ['自己做所有的事', '拥有一个能自动运转的系统', '帮别人打工', '纯靠投资赚钱'],
             answer: 1, reward: 1500,
             explanation: 'B象限的核心是建立系统。你不需要亲自参与日常运营，系统（团队、流程、品牌）会为你工作。'
@@ -1012,10 +1012,10 @@ const CARDS = {
             explanation: '租金收入是典型的被动收入——房子在那里，租客每月付租金，你不需要每天去"上班"。自由职业虽然自由，但仍是用时间换钱。'
         },
         {
-            id: 'q21', question: '"ESBI象限"中，E代表什么？',
+            id: 'q21', question: '"收入象限"中，E代表什么？',
             options: ['企业家', '雇员', '经济学家', '专家'],
             answer: 1, reward: 1000,
-            explanation: 'E=Employee（雇员），S=Self-employed（自雇），B=Business owner（企业主），I=Investor（投资者）。大多数人在E象限。'
+            explanation: 'E=Employee（雇员），S=Self-employed（自雇），B=Business owner（企业主），I=Investor（投资者）。大多数人处于E象限。'
         },
         {
             id: 'q22', question: '负债率多少算健康？',
@@ -1270,7 +1270,7 @@ const ASSET_INTERACTION_EVENTS = [
             { label: '不信任，拒绝', effect: 'none',
               tip: '拒绝也无妨' }
         ],
-        tip: '生意合作是B象限扩张的常见方式，但需要甄别合作伙伴。'
+        tip: '生意合作是企业扩张的常见方式，但需要甄别合作伙伴。'
     },
     {
         id: 'stock_split_choice',
@@ -1512,7 +1512,7 @@ const CAREER_EVENTS = [
         title: '裁员风波',
         description: '公司正在裁员，你虽然保住了工作，但内心很不安。满意度下降。',
         effect: 'satisfaction_change', delta: -15,
-        tip: '就业危机是最好的创业/投资动力。在E象限永远没有真正的安全感。'
+        tip: '就业危机是最好的创业/投资动力。纯靠工资收入永远没有真正的安全感。'
     },
     {
         id: 'overtime_bonus',
@@ -1534,14 +1534,14 @@ const CAREER_EVENTS = [
         description: '你有机会晋升为管理层，工资涨20%，但要付出更多时间和精力。',
         effect: 'salary_change', multiplier: 1.2,
         satisfactionDelta: -5,
-        tip: '晋升意味着更高的E象限收入，但也意味着更少的时间用于发展被动收入。'
+        tip: '晋升意味着更高的工资收入，但也意味着更少的时间用于发展被动收入。'
     },
     {
         id: 'side_income',
         title: '兼职收入',
         description: '你利用业余时间接了一个私活，获得了一笔额外收入。',
         effect: 'cash_bonus', amount: 2000,
-        tip: '兼职是S象限的起点。但记住：兼职收入还是在用时间换钱。'
+        tip: '兼职是自雇的起点。但记住：兼职收入还是在用时间换钱。'
     },
     {
         id: 'training_opportunity',
@@ -1626,7 +1626,7 @@ const EXTRA_INTERACTION_EVENTS = [
         description: '你拥有多个生意，有人建议你整合成一个品牌运营。花¥20,000重组，总收入可以提升40%。',
         choices: [
             { label: '整合重组 (-¥20,000)', effect: 'upgrade_all_income', cost: 20000, multiplier: 1.4,
-              tip: '品牌化运营是B象限的高阶操作' },
+              tip: '品牌化运营是企业主的高阶操作' },
             { label: '各自独立运营', effect: 'none',
               tip: '分散也有分散的好处' }
         ],

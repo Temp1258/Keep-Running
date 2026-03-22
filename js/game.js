@@ -343,9 +343,9 @@ class Game {
         const card = {
             title: '象限进化机会！',
             description: `你已经具备了进入${targetQuadrant}象限（${quadrantNames[targetQuadrant]}）的条件。`,
-            tip: targetQuadrant === 'S' ? 'S象限的人是自己给自己打工，还是在用时间换钱。' :
-                 targetQuadrant === 'B' ? 'B象限的人建立系统，让系统为你赚钱。' :
-                 'I象限的人用钱生钱，这是财务自由的终极形态。'
+            tip: targetQuadrant === 'S' ? '自雇者用自己的技能赚钱，收入上限取决于个人精力和时间。' :
+                 targetQuadrant === 'B' ? '企业主通过建立团队和系统运转来创造收入，不再依赖个人劳动。' :
+                 '投资者用资本生钱，让财富自动增长，这是财务自由的终极形态。'
         };
 
         const detailText = quadrantEffects[targetQuadrant].map(e => e).join('\n');
@@ -1704,9 +1704,9 @@ class Game {
         let title, message;
         if (won) {
             title = '恭喜！财务自由！';
-            message = '你成功让被动收入超过了总支出，逃出了老鼠赛跑圈！';
+            message = '你成功让被动收入超过了总支出，突破了收支循环，实现了真正的财务自由！';
         } else if (reason === 'timeout') {
-            title = '时间到！困在老鼠圈';
+            title = '时间到！未能突破循环';
             message = `${this.maxMonths}个月过去了，你还没有实现财务自由。被动收入 ¥${player.getPassiveIncome().toLocaleString()} / 总支出 ¥${player.getTotalExpense().toLocaleString()}。不要灰心，再试一次！`;
         } else {
             title = '很遗憾，你破产了';
