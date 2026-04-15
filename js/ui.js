@@ -29,6 +29,42 @@ const UI = {
         }, duration || 3000);
     },
 
+    async copyTextToClipboard(text) {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch {}
+
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return ok;
+        } catch {
+            return false;
+        }
+    },
+
+    buildShareReport(won, player) {
+        const passive = player.getPassiveIncome();
+        const expense = player.getTotalExpense();
+        const progress = expense > 0 ? Math.round(passive / expense * 100) : 0;
+        const status = won ? '我在《现金流》达成了财务自由！' : '我在《现金流》这局没能通关，但复盘后更清楚问题了。';
+        const stress = `职业：${player.careerName}｜月数：${player.month}｜象限：${player.quadrant}`;
+        const stats = `被动收入：¥${passive.toLocaleString()}/月｜总支出：¥${expense.toLocaleString()}/月｜进度：${progress}%`;
+        const close = '来挑战：让被动收入 >= 总支出。';
+        return [status, stress, stats, close].join('\n');
+    },
+
     // === 职业选择 ===
     renderCareerList(onSelect) {
         const traitLabels = {
@@ -418,6 +454,46 @@ const UI = {
             </div>`;
         }
         container.innerHTML = html;
+    },
+
+    // === 轻量新手引导 ===
+    showBeginnerGuide(onDone) {
+        const overlay = document.getElementById('modal-overlay');
+        document.getElementById('card-type-badge').textContent = '新手引导';
+        document.getElementById('card-type-badge').className = 'card-type-badge badge-learning';
+        document.getElementById('card-title').textContent = '30秒上手';
+        document.getElementById('card-description').textContent = '这局只记住 4 件事，就能顺利开局。';
+        document.getElementById('card-details').innerHTML = `
+            <div class="detail-row"><span class="detail-label">1. 目标</span><span class="detail-value">被动收入 ≥ 总支出</span></div>
+            <div class="detail-row"><span class="detail-label">2. 每月流程</span><span class="detail-value">结算 → 事件 → 决策</span></div>
+            <div class="detail-row"><span class="detail-label">3. 优先策略</span><span class="detail-value">先买正现金流资产，少碰高月供负债</span></div>
+            <div class="detail-row"><span class="detail-label">4. 快捷键</span><span class="detail-value">Enter 下月 / Space 行动 / Esc 关弹窗</span></div>
+        `;
+        document.getElementById('card-tip').textContent = '完整规则可在主菜单「游戏说明」查看。';
+
+        const actionsEl = document.getElementById('card-actions');
+        actionsEl.innerHTML = '';
+        actionsEl.style.flexDirection = 'row';
+
+        const startBtn = document.createElement('button');
+        startBtn.className = 'btn btn-primary';
+        startBtn.textContent = '开始游戏';
+        startBtn.addEventListener('click', () => {
+            overlay.classList.add('hidden');
+            if (onDone) onDone(false);
+        });
+
+        const hideBtn = document.createElement('button');
+        hideBtn.className = 'btn btn-secondary';
+        hideBtn.textContent = '不再提示';
+        hideBtn.addEventListener('click', () => {
+            overlay.classList.add('hidden');
+            if (onDone) onDone(true);
+        });
+
+        actionsEl.appendChild(startBtn);
+        actionsEl.appendChild(hideBtn);
+        overlay.classList.remove('hidden');
     },
 
     // === 先付自己面板（系统二） ===
@@ -1043,6 +1119,13 @@ const UI = {
         document.getElementById('gameover-title').textContent = title;
         document.getElementById('gameover-title').style.color = won ? 'var(--color-gold)' : 'var(--color-negative)';
         document.getElementById('gameover-message').textContent = message;
+        const shareReport = this.buildShareReport(won, player);
+        Storage.trackEvent('gameover_show', {
+            won,
+            month: player.month,
+            career: player.careerName,
+            quadrant: player.quadrant
+        });
 
         let statsHtml = `
             <div class="stat-item"><div class="stat-label">总月数</div><div class="stat-value">${player.month}</div></div>
@@ -1179,6 +1262,29 @@ const UI = {
         document.getElementById('gameover-stats').innerHTML = statsHtml;
         document.getElementById('gameover-analysis').innerHTML = analysisHtml;
 
+        const shareBtn = document.getElementById('btn-gameover-share');
+        if (shareBtn) {
+            shareBtn.onclick = async () => {
+                const ok = await this.copyTextToClipboard(shareReport);
+                if (ok) {
+                    Storage.trackEvent('share_report_copy', {
+                        won,
+                        month: player.month,
+                        career: player.careerName,
+                        progress: player.getFreedomProgress()
+                    });
+                    this.showToast('战报已复制，去发给朋友挑战吧', 2800);
+                } else {
+                    Storage.trackEvent('share_report_copy_failed', {
+                        won,
+                        month: player.month,
+                        career: player.careerName
+                    });
+                    this.showToast('复制失败，请手动复制结算内容', 2800);
+                }
+            };
+        }
+
         overlay.classList.remove('hidden');
     },
 
@@ -1189,7 +1295,27 @@ const UI = {
     // === 统计页 ===
     renderStatsScreen() {
         const stats = Storage.getStats();
+        const funnel = Storage.getFunnelReport();
         const container = document.getElementById('stats-content');
+        const pct = (num, den) => den > 0 ? `${Math.round(num / den * 100)}%` : '--';
+        const stageDefs = [
+            { key: 'entered', label: '进入' },
+            { key: 'started', label: '开局' },
+            { key: 'reached6', label: '第6月' },
+            { key: 'reached12', label: '第12月' },
+            { key: 'won', label: '通关' }
+        ];
+        const stageRows = stageDefs.map((stage, idx) => {
+            const count = funnel.app[stage.key] || 0;
+            const prevCount = idx > 0 ? (funnel.app[stageDefs[idx - 1].key] || 0) : null;
+            const fromPrev = idx === 0 ? '--' : pct(count, prevCount);
+            const fromEnter = idx === 0 ? '100%' : pct(count, funnel.app.entered || 0);
+            return `<div class="finance-item">
+                <span>${stage.label}: ${count}</span>
+                <span style="font-size:12px;color:var(--color-text-dim)">上一步 ${fromPrev} | 从进入 ${fromEnter}</span>
+            </div>`;
+        }).join('');
+
         container.innerHTML = `
             <div class="stats-grid">
                 <div class="stat-item"><div class="stat-label">总游玩次数</div><div class="stat-value">${stats.totalGames}</div></div>
@@ -1198,6 +1324,17 @@ const UI = {
                 <div class="stat-item"><div class="stat-label">累计游玩月数</div><div class="stat-value">${stats.totalMonths}</div></div>
                 <div class="stat-item"><div class="stat-label">最高被动收入</div><div class="stat-value" style="color:var(--color-income)">¥${stats.bestPassiveIncome.toLocaleString()}/月</div></div>
                 <div class="stat-item"><div class="stat-label">答题正确率</div><div class="stat-value">${stats.totalQuizTotal > 0 ? Math.round(stats.totalQuizCorrect / stats.totalQuizTotal * 100) + '%' : '暂无'}</div></div>
+            </div>
+            <div class="finance-section" style="margin-top:16px">
+                <div class="section-header">
+                    <span>增长漏斗（进入→开局→6月→12月→通关）</span>
+                    <span class="section-total">样本 ${funnel.app.entered}</span>
+                </div>
+                <div class="finance-list">${stageRows}</div>
+                <div style="margin-top:8px;color:var(--color-text-dim);font-size:12px">
+                    局级参考（仅新开局）：开局 ${funnel.game.started} 局，达到第6月 ${funnel.game.reached6} 局，第12月 ${funnel.game.reached12} 局，通关 ${funnel.game.won} 局。
+                    ${funnel.loadedGames > 0 ? `已排除读档局 ${funnel.loadedGames} 局。` : ''}
+                </div>
             </div>
         `;
     },

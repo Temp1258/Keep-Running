@@ -5,6 +5,8 @@
 (function () {
     window.game = null;
     window.selectedDuration = 60; // 默认60个月
+    window.appSessionId = null;
+    window.currentGameRunId = null;
 
     function initMenu() {
         UI.showScreen('screen-menu');
@@ -26,7 +28,13 @@
 
     function startGame(player, maxMonths) {
         const duration = maxMonths || window.selectedDuration || 60;
-        window.game = new Game(player, duration);
+        window.currentGameRunId = Storage.startGameRun(window.appSessionId, {
+            career: player.careerName,
+            duration,
+            startMonth: player.month,
+            isLoadedGame: player.month > 1
+        });
+        window.game = new Game(player, duration, window.currentGameRunId);
         UI.showScreen('screen-game');
         UI.clearMessages();
         UI.updateFinancePanel(player, window.game.maxMonths);
@@ -41,6 +49,14 @@
                 <p style="color:var(--color-text-dim);margin-top:4px">点击下方按钮开始第一个月</p>
             </div>
         `);
+
+        if (player.month === 1 && !Storage.hasSeenBeginnerGuide()) {
+            UI.showBeginnerGuide((dontShowAgain) => {
+                if (dontShowAgain) {
+                    Storage.markBeginnerGuideSeen();
+                }
+            });
+        }
     }
 
     function bindDurationSelector() {
@@ -113,7 +129,15 @@
         // 退出
         document.getElementById('btn-quit').addEventListener('click', () => {
             if (confirm('确定要退出吗？未保存的进度将丢失。')) {
+                if (window.currentGameRunId && window.game) {
+                    Storage.endGameRun(window.currentGameRunId, {
+                        won: false,
+                        reason: 'quit',
+                        month: window.game.player.month
+                    });
+                }
                 window.game = null;
+                window.currentGameRunId = null;
                 initMenu();
             }
         });
@@ -122,6 +146,7 @@
         document.getElementById('btn-gameover-menu').addEventListener('click', () => {
             UI.hideGameOver();
             window.game = null;
+            window.currentGameRunId = null;
             initMenu();
         });
 
@@ -156,6 +181,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        window.appSessionId = Storage.startAppSession();
         bindEvents();
         initMenu();
     });

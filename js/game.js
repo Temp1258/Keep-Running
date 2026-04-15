@@ -6,11 +6,12 @@
  * V9: 多事件同时发生、职业-事件金额联动
  */
 class Game {
-    constructor(player, maxMonths) {
+    constructor(player, maxMonths, gameRunId) {
         this.player = player;
         this.isProcessing = false;
         this.maxMonths = maxMonths || 60;
         this.isFirstMonth = (player.month === 1);
+        this.gameRunId = gameRunId || null;
     }
 
     // ==============================
@@ -158,6 +159,9 @@ class Game {
 
         // 2. 显示税后收入明细
         this.logMonthlyIncome(result);
+
+        // 2.5 漏斗进度埋点（第6月/第12月）
+        Storage.trackGameProgress(this.gameRunId, player.month);
 
         // 3. 检查现金流模式变化
         this.checkCashflowPatternChange();
@@ -1697,6 +1701,16 @@ class Game {
     endGame(won, reason) {
         this.isProcessing = false;
         const player = this.player;
+        const endReason = won ? 'win' : (reason || 'bankrupt');
+
+        Storage.endGameRun(this.gameRunId, {
+            won,
+            reason: endReason,
+            month: player.month
+        });
+        if (window.currentGameRunId === this.gameRunId) {
+            window.currentGameRunId = null;
+        }
 
         const stats = Storage.updateStats(player, won);
         if (won) this.checkAchievements('game_win');
